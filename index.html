@@ -131,4 +131,57 @@
         gameObj.onclick = (e) => {
             e.stopPropagation(); // 防止觸發背景點擊
             document.getElementById('success-sound').play();
-            game
+            gameObj.style.display = 'none';
+            setTimeout(spawn, 400); // 0.4 秒後生成下一個
+        };
+
+        // UI 互動邏輯
+        document.getElementById('settings-btn').onclick = () => {
+            panel.classList.add('open');
+            overlay.style.display = 'block';
+        };
+
+        function closeSettings() {
+            panel.classList.remove('open');
+            overlay.style.display = 'none';
+            spawn(); // 關閉設定後立刻生成一個，確保更新
+        }
+
+        document.getElementById('close-btn').onclick = closeSettings;
+        overlay.onclick = closeSettings;
+
+        // 選項點擊事件處理
+        document.querySelectorAll('.option-btn').forEach(btn => {
+            btn.onclick = function() {
+                const type = this.dataset.type;
+                const value = this.dataset.value;
+
+                // 移除同一組的 selected
+                this.parentElement.querySelectorAll('.option-btn').forEach(b => b.classList.remove('selected'));
+                this.classList.add('selected');
+
+                if (type === 'bg') {
+                    config.bg = value;
+                    if(value === 'white') { container.style.backgroundImage = 'none'; container.style.backgroundColor = 'white'; }
+                    else if(value === 'black') { container.style.backgroundImage = 'none'; container.style.backgroundColor = 'black'; }
+                    else { container.style.backgroundImage = `url(${value})`; }
+                } 
+                else if (type === 'obj') {
+                    config.obj = value;
+                }
+                else if (type === 'size') {
+                    config.size = parseInt(value);
+                    let label = "中";
+                    if(value === "80") label = "小";
+                    if(value === "400") label = "大";
+                    sectionTitleSize.innerText = `3. 目標物大小 (${label})`;
+                }
+            };
+        });
+
+        // 初始化遊戲
+        updateBg('HK.jpg', document.querySelector('[data-value="HK.jpg"]'));
+        spawn();
+    </script>
+</body>
+</html>
