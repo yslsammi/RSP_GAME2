@@ -3,201 +3,83 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>視覺搜尋遊戲 - 眼動模擬版</title>
+    <title>視覺搜尋遊戲 - 強制喚起鏡頭版</title>
     <script src="https://webgazer.cs.brown.edu/webgazer.js"></script>
     <style>
-        body, html {
-            margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden;
-            font-family: "Arial", "Microsoft JhengHei", sans-serif;
-            background-color: #000; -webkit-user-select: none; user-select: none;
-        }
-        #game-container {
-            position: relative; width: 100vw; height: 100vh;
-            background-size: cover; background-position: center; transition: all 0.3s;
-            background-color: #333;
-        }
-        #game-object {
-            position: absolute; cursor: pointer; z-index: 10;
-            display: none; object-fit: contain; 
-            filter: drop-shadow(0 0 10px rgba(255,255,255,0.8));
-        }
-        #settings-btn {
-            position: absolute; top: 20px; left: 20px; width: 60px; height: 60px;
-            background: white; border-radius: 15px; border: 4px solid #333;
-            font-size: 30px; display: flex; justify-content: center; align-items: center;
-            cursor: pointer; z-index: 999;
-        }
-        #settings-panel {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: #fff; z-index: 1001; padding: 20px; box-sizing: border-box;
-            display: none; overflow-y: auto;
-        }
-        .setting-group { margin-bottom: 25px; background: #f0f0f0; padding: 15px; border-radius: 20px; }
-        .setting-label { font-weight: bold; font-size: 1.5rem; display: block; margin-bottom: 12px; }
-        .bg-options, .obj-options, .size-options { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; }
-        .bg-option { width: 100px; height: 70px; border: 4px solid #ccc; border-radius: 12px; cursor: pointer; object-fit: cover; }
-        .color-option { display: flex; align-items: center; justify-content: center; font-weight: bold; border: 4px solid #ccc; }
-        .obj-btn, .size-btn { padding: 12px 20px; background: white; border: 3px solid #ccc; border-radius: 12px; cursor: pointer; font-weight: bold; font-size: 1.1rem; }
-        .selected { border-color: #007AFF !important; background: #e7f3ff !important; }
-        #close-settings { width: 100%; padding: 20px; background: #28a745; color: white; font-size: 1.6rem; border: none; border-radius: 15px; cursor: pointer; margin-top: 20px; font-weight: bold; }
-        
-        /* 眼動提示紅色小點 */
-        #eye-cursor {
-            position: fixed; width: 25px; height: 25px; background: rgba(255, 0, 0, 0.6);
-            border-radius: 50%; pointer-events: none; z-index: 9999; display: none;
-            box-shadow: 0 0 10px red;
-        }
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background-color: #000; font-family: sans-serif; }
+        #game-container { position: relative; width: 100vw; height: 100vh; background-size: cover; background-position: center; }
+        #game-object { position: absolute; cursor: pointer; display: none; object-fit: contain; z-index: 10; filter: drop-shadow(0 0 10px white); }
+        #settings-btn { position: absolute; top: 20px; left: 20px; width: 60px; height: 60px; background: white; border-radius: 15px; font-size: 30px; display: flex; justify-content: center; align-items: center; cursor: pointer; z-index: 999; }
+        #settings-panel { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #fff; z-index: 1001; padding: 20px; box-sizing: border-box; display: none; overflow-y: auto; }
+        .setting-group { margin-bottom: 20px; background: #f0f0f0; padding: 15px; border-radius: 15px; }
+        .obj-btn { padding: 15px; background: white; border: 2px solid #ccc; border-radius: 10px; cursor: pointer; width: 100%; font-weight: bold; }
+        #eye-cursor { position: fixed; width: 20px; height: 20px; background: red; border-radius: 50%; pointer-events: none; z-index: 9999; display: none; opacity: 0.7; }
     </style>
 </head>
 <body>
     <audio id="success-sound" src="cheer.mp3"></audio>
     <div id="eye-cursor"></div>
-    
     <div id="game-container">
         <img id="game-object" src="">
         <div id="settings-btn">⚙️</div>
     </div>
 
     <div id="settings-panel">
-        <h2 style="text-align: center;">⚙️ 遊戲設定</h2>
-        
-        <div class="setting-group" style="border: 2px solid #ff4444;">
-            <span class="setting-label">👀 眼動控制儀 (Beta)</span>
-            <button id="toggle-eye" class="obj-btn" style="width: 100%;">開啟鏡頭追蹤</button>
-            <p style="font-size: 0.85rem; color: #666; margin-top: 10px;">
-                開啟後：<br>
-                1. 請允許瀏覽器使用鏡頭。<br>
-                2. 盯着螢幕上的**紅色圓點**移動滑鼠並點擊，進行初步校準。<br>
-                3. 用眼睛注視圖片 0.5 秒即可觸發成功。
-            </p>
-        </div>
-
+        <h2>⚙️ 系統偵測與設定</h2>
         <div class="setting-group">
-            <span class="setting-label">1. 背景圖片</span>
-            <div class="bg-options">
-                <img src="HK.jpg" class="bg-option selected" data-bg="HK.jpg">
-                <img src="MTR2.jpg" class="bg-option" data-bg="MTR2.jpg">
-                <img src="supermarket.jpg" class="bg-option" data-bg="supermarket.jpg">
-                <div class="bg-option color-option" data-bg="white" style="background:white; color:black;">純白</div>
-                <div class="bg-option color-option" data-bg="black" style="background:black; color:white;">純黑</div>
-            </div>
+            <button id="toggle-eye" class="obj-btn" style="background: #ffeb3b; border: 3px solid #fbc02d;">🚀 點擊此處：強制喚起攝影機</button>
+            <p id="status-msg" style="color: red; font-weight: bold; margin-top: 10px;"></p>
         </div>
-
-        <div class="setting-group">
-            <span class="setting-label">2. 目標物</span>
-            <div class="obj-options">
-                <button class="obj-btn" data-obj="apple.jpg">🍎 蘋果</button>
-                <button class="obj-btn selected" data-obj="banana.jpg">🍌 香蕉</button>
-                <button class="obj-btn" data-obj="mtr.jpg">🚇 港鐵</button>
-                <button class="obj-btn" data-obj="taxi.jpg">🚕 的士</button>
-                <button class="obj-btn" data-obj="minibus.jpg">🚌 小巴</button>
-            </div>
-        </div>
-
-        <div class="setting-group">
-            <span class="setting-label">3. 目標大小</span>
-            <div class="size-options">
-                <button class="size-btn" data-size="small">小 (80px)</button>
-                <button class="size-btn selected" data-size="medium">中 (200px)</button>
-                <button class="size-btn" data-size="large">大 (450px)</button>
-            </div>
-        </div>
-
-        <button id="close-settings">✅ 儲存並開始</button>
+        <button id="close-settings" class="obj-btn" style="background: #4caf50; color: white;">✅ 關閉並開始</button>
     </div>
 
     <script>
-        const state = { bg: 'HK.jpg', obj: 'banana.jpg', size: 'medium', eyeEnabled: false };
-        const sizes = { small: 80, medium: 200, large: 450 };
+        const state = { obj: 'banana.jpg', eyeEnabled: false };
         const gameObj = document.getElementById('game-object');
-        const container = document.getElementById('game-container');
-        const eyeCursor = document.getElementById('eye-cursor');
+        const statusMsg = document.getElementById('status-msg');
 
         function spawn() {
             gameObj.src = state.obj;
-            const s = sizes[state.size];
-            gameObj.style.width = s + 'px';
-            const maxX = window.innerWidth - s;
-            const maxY = window.innerHeight - s;
-            gameObj.style.left = Math.random() * maxX + 'px';
-            gameObj.style.top = Math.random() * maxY + 'px';
+            gameObj.style.width = '200px';
+            gameObj.style.left = '50%';
+            gameObj.style.top = '50%';
             gameObj.style.display = 'block';
         }
 
-        function win() {
-            document.getElementById('success-sound').play();
-            gameObj.style.display = 'none';
-            setTimeout(spawn, 500);
-        }
+        document.getElementById('toggle-eye').onclick = async function() {
+            statusMsg.innerText = "正在嘗試連接攝影機...";
+            
+            try {
+                // 強制檢查瀏覽器是否支援鏡頭
+                const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+                statusMsg.innerText = "✅ 鏡頭權限已獲取，正在啟動 AI...";
+                stream.getTracks().forEach(track => track.stop()); // 先釋放測試流
 
-        gameObj.onclick = win;
-
-        // --- 眼動儀功能邏輯 ---
-        document.getElementById('toggle-eye').onclick = function() {
-            if (!state.eyeEnabled) {
-                this.innerText = "正在啟動鏡頭...";
-                webgazer.setGazeListener(function(data, elapsedTime) {
-                    if (data == null) return;
-                    
-                    // 更新提示點
-                    eyeCursor.style.display = 'block';
-                    eyeCursor.style.left = data.x + 'px';
-                    eyeCursor.style.top = data.y + 'px';
-
-                    // 碰撞偵測：眼睛是否盯着圖片
-                    const rect = gameObj.getBoundingClientRect();
-                    if (data.x >= rect.left && data.x <= rect.right &&
-                        data.y >= rect.top && data.y <= rect.bottom) {
-                        if (gameObj.style.display !== 'none') win();
+                webgazer.setGazeListener((data, elapsed) => {
+                    if (data) {
+                        const cursor = document.getElementById('eye-cursor');
+                        cursor.style.display = 'block';
+                        cursor.style.left = data.x + 'px';
+                        cursor.style.top = data.y + 'px';
                     }
                 }).begin();
-                
-                webgazer.showVideoPreview(true).showPredictionPoints(false);
+
+                webgazer.showVideoPreview(true);
                 state.eyeEnabled = true;
-                this.innerText = "關閉眼動模式";
-            } else {
-                webgazer.pause();
-                eyeCursor.style.display = 'none';
-                webgazer.showVideoPreview(false);
-                state.eyeEnabled = false;
-                this.innerText = "開啟鏡頭追蹤";
+                this.innerText = "✅ 眼動追蹤運行中";
+                this.style.background = "#c8e6c9";
+            } catch (err) {
+                statusMsg.innerText = "❌ 錯誤：" + err.message;
+                console.error(err);
+                alert("攝影機啟動失敗！請檢查是否被其他程式佔用（如 Zoom 或 Teams）");
             }
         };
 
-        // --- UI 選項邏輯 ---
         document.getElementById('settings-btn').onclick = () => document.getElementById('settings-panel').style.display = 'block';
         document.getElementById('close-settings').onclick = () => {
             document.getElementById('settings-panel').style.display = 'none';
             spawn();
         };
-
-        document.querySelectorAll('.bg-option').forEach(el => {
-            el.onclick = () => {
-                document.querySelectorAll('.bg-option').forEach(b => b.classList.remove('selected'));
-                el.classList.add('selected');
-                state.bg = el.dataset.bg;
-                if(state.bg === 'white') { container.style.backgroundImage = 'none'; container.style.backgroundColor = 'white'; }
-                else if(state.bg === 'black') { container.style.backgroundImage = 'none'; container.style.backgroundColor = 'black'; }
-                else { container.style.backgroundImage = `url(${state.bg})`; }
-            };
-        });
-
-        document.querySelectorAll('.obj-btn').forEach(el => {
-            el.onclick = () => {
-                if(!el.dataset.obj) return;
-                document.querySelectorAll('.obj-btn').forEach(b => b.classList.remove('selected'));
-                el.classList.add('selected');
-                state.obj = el.dataset.obj;
-            };
-        });
-
-        document.querySelectorAll('.size-btn').forEach(el => {
-            el.onclick = () => {
-                document.querySelectorAll('.size-btn').forEach(b => b.classList.remove('selected'));
-                el.classList.add('selected');
-                state.size = el.dataset.size;
-            };
-        });
 
         spawn();
     </script>
