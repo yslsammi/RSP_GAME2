@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>視覺搜尋遊戲 - 強制喚起鏡頭版</title>
+    <title>視覺搜尋遊戲 - 紅點修正版</title>
     <script src="https://webgazer.cs.brown.edu/webgazer.js"></script>
     <style>
         body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background-color: #000; font-family: sans-serif; }
@@ -13,7 +13,21 @@
         #settings-panel { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #fff; z-index: 1001; padding: 20px; box-sizing: border-box; display: none; overflow-y: auto; }
         .setting-group { margin-bottom: 20px; background: #f0f0f0; padding: 15px; border-radius: 15px; }
         .obj-btn { padding: 15px; background: white; border: 2px solid #ccc; border-radius: 10px; cursor: pointer; width: 100%; font-weight: bold; }
-        #eye-cursor { position: fixed; width: 20px; height: 20px; background: red; border-radius: 50%; pointer-events: none; z-index: 9999; display: none; opacity: 0.7; }
+        
+        /* 強制顯示紅點 */
+        #eye-cursor { 
+            position: fixed; 
+            width: 30px; 
+            height: 30px; 
+            background: rgba(255, 0, 0, 0.8); 
+            border: 2px solid white;
+            border-radius: 50%; 
+            pointer-events: none; 
+            z-index: 99999; /* 確保在最上層 */
+            display: none; 
+            box-shadow: 0 0 15px rgba(255, 0, 0, 1);
+            transform: translate(-50%, -50%); /* 讓中心點對準座標 */
+        }
     </style>
 </head>
 <body>
@@ -25,18 +39,19 @@
     </div>
 
     <div id="settings-panel">
-        <h2>⚙️ 系統偵測與設定</h2>
+        <h2>⚙️ 眼動校準與設定</h2>
         <div class="setting-group">
-            <button id="toggle-eye" class="obj-btn" style="background: #ffeb3b; border: 3px solid #fbc02d;">🚀 點擊此處：強制喚起攝影機</button>
-            <p id="status-msg" style="color: red; font-weight: bold; margin-top: 10px;"></p>
+            <button id="toggle-eye" class="obj-btn" style="background: #ffeb3b;">🚀 啟動眼動儀 (顯示紅點)</button>
+            <p id="status-msg" style="color: green; font-weight: bold; margin-top: 10px;"></p>
         </div>
-        <button id="close-settings" class="obj-btn" style="background: #4caf50; color: white;">✅ 關閉並開始</button>
+        <button id="close-settings" class="obj-btn" style="background: #4caf50; color: white;">✅ 開始遊戲</button>
     </div>
 
     <script>
         const state = { obj: 'banana.jpg', eyeEnabled: false };
         const gameObj = document.getElementById('game-object');
         const statusMsg = document.getElementById('status-msg');
+        const eyeCursor = document.getElementById('eye-cursor');
 
         function spawn() {
             gameObj.src = state.obj;
@@ -47,31 +62,30 @@
         }
 
         document.getElementById('toggle-eye').onclick = async function() {
-            statusMsg.innerText = "正在嘗試連接攝影機...";
-            
             try {
-                // 強制檢查瀏覽器是否支援鏡頭
-                const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-                statusMsg.innerText = "✅ 鏡頭權限已獲取，正在啟動 AI...";
-                stream.getTracks().forEach(track => track.stop()); // 先釋放測試流
-
                 webgazer.setGazeListener((data, elapsed) => {
                     if (data) {
-                        const cursor = document.getElementById('eye-cursor');
-                        cursor.style.display = 'block';
-                        cursor.style.left = data.x + 'px';
-                        cursor.style.top = data.y + 'px';
+                        eyeCursor.style.display = 'block';
+                        eyeCursor.style.left = data.x + 'px';
+                        eyeCursor.style.top = data.y + 'px';
+
+                        // 自動觸發檢測
+                        const rect = gameObj.getBoundingClientRect();
+                        if (data.x >= rect.left && data.x <= rect.right &&
+                            data.y >= rect.top && data.y <= rect.bottom) {
+                            if (gameObj.style.display !== 'none') {
+                                document.getElementById('success-sound').play();
+                                gameObj.style.display = 'none';
+                                setTimeout(spawn, 500);
+                            }
+                        }
                     }
                 }).begin();
 
-                webgazer.showVideoPreview(true);
-                state.eyeEnabled = true;
-                this.innerText = "✅ 眼動追蹤運行中";
-                this.style.background = "#c8e6c9";
+                webgazer.showVideoPreview(true).showPredictionPoints(true);
+                statusMsg.innerText = "✅ 運行中！請盯着紅點並用滑鼠點擊它進行校準。";
             } catch (err) {
-                statusMsg.innerText = "❌ 錯誤：" + err.message;
-                console.error(err);
-                alert("攝影機啟動失敗！請檢查是否被其他程式佔用（如 Zoom 或 Teams）");
+                alert("啟動失敗: " + err);
             }
         };
 
