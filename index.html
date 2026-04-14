@@ -6,354 +6,152 @@
     <title>視覺搜尋遊戲 - 香港版</title>
     <style>
         body, html {
-            margin: 0;
-            padding: 0;
-            width: 100%;
-            height: 100%;
-            overflow: hidden;
+            margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden;
             font-family: "Arial", "Microsoft JhengHei", sans-serif;
-            background-color: #000;
+            background-color: #000; -webkit-user-select: none; user-select: none;
         }
-
         #game-container {
-            position: relative;
-            width: 100vw;
-            height: 100vh;
-            background-size: cover;
-            background-position: center;
-            cursor: crosshair;
-            transition: filter 0.3s ease;
+            position: relative; width: 100vw; height: 100vh;
+            background-size: cover; background-position: center; transition: background-image 0.5s;
         }
-
-        /* 標籤樣式 */
-        #target-label {
-            position: absolute;
-            background: rgba(255, 255, 255, 0.8);
-            padding: 5px 10px;
-            border-radius: 5px;
-            font-weight: bold;
-            pointer-events: none;
-            display: none;
-            z-index: 10;
+        #dim-overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background-color: black; opacity: 0; pointer-events: none; z-index: 1;
         }
-
-        #target-img {
-            max-width: 100px;
-            max-height: 100px;
-            display: block;
-            margin-bottom: 5px;
+        #game-object {
+            position: absolute; cursor: pointer; z-index: 10; transition: transform 0.1s;
+            display: none; object-fit: contain; filter: drop-shadow(0 0 10px rgba(255,255,255,0.9));
         }
-
-        /* 控制介面 */
-        #ui-layer {
-            position: absolute;
-            top: 20px;
-            left: 20px;
-            z-index: 100;
+        #settings-btn {
+            position: absolute; top: 20px; left: 20px; width: 60px; height: 60px;
+            background-color: #fff; border-radius: 15px; border: 4px solid #333;
+            font-size: 30px; display: flex; justify-content: center; align-items: center;
+            cursor: pointer; z-index: 999; box-shadow: 0 4px 8px rgba(0,0,0,0.5);
         }
-
-        .settings-btn {
-            background: white;
-            border: none;
-            padding: 10px;
-            border-radius: 50%;
-            width: 44px;
-            height: 44px;
-            cursor: pointer;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.3);
-            font-size: 20px;
-        }
-
-        /* 設定視窗 */
         #settings-panel {
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background: white;
-            padding: 25px;
-            border-radius: 15px;
-            box-shadow: 0 0 30px rgba(0,0,0,0.5);
-            display: none;
-            z-index: 200;
-            min-width: 300px;
-            max-width: 90%;
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background-color: #fff; z-index: 1001; padding: 20px; box-sizing: border-box;
+            display: none; overflow-y: auto;
         }
-
-        .setting-group {
-            margin-bottom: 20px;
-        }
-
-        .setting-label {
-            display: block;
-            margin-bottom: 10px;
-            font-weight: bold;
-            color: #333;
-        }
-
-        /* 選項按鈕樣式 */
-        .bg-options, .obj-options, .mode-options {
-            display: flex;
-            gap: 10px;
-            flex-wrap: wrap;
-        }
-
-        .bg-option, .obj-btn {
-            border: 2px solid #ddd;
-            border-radius: 8px;
-            cursor: pointer;
-            overflow: hidden;
-            transition: all 0.2s;
-            background: #f9f9f9;
-        }
-
-        .bg-option {
-            width: 80px;
-            height: 60px;
-            object-fit: cover;
-        }
-
-        .obj-btn {
-            padding: 8px 12px;
-            font-size: 14px;
-            display: flex;
-            align-items: center;
-            gap: 5px;
-        }
-
-        .selected {
-            border-color: #007AFF;
-            background: #eef6ff;
-        }
-
-        /* 模式切換按鈕 */
-        .mode-btn-group {
-            display: flex;
-            background: #eee;
-            padding: 4px;
-            border-radius: 8px;
-        }
-
-        .mode-btn-group label {
-            flex: 1;
-            text-align: center;
-            padding: 8px;
-            cursor: pointer;
-            border-radius: 6px;
-        }
-
-        .mode-btn-group input { display: none; }
-        .mode-btn-group input:checked + .mode-btn {
-            background: white;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-        }
-
-        /* 亮度調節 */
-        #dim-slider { width: 100%; }
-
-        #close-settings {
-            width: 100%;
-            padding: 12px;
-            background: #007AFF;
-            color: white;
-            border: none;
-            border-radius: 8px;
-            margin-top: 10px;
-            cursor: pointer;
-            font-weight: bold;
-        }
-
-        /* 音效提示 */
-        #feedback {
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            font-size: 80px;
-            pointer-events: none;
-            opacity: 0;
-            z-index: 300;
-        }
-
-        @keyframes pop {
-            0% { transform: translate(-50%, -50%) scale(0.5); opacity: 0; }
-            50% { opacity: 1; }
-            100% { transform: translate(-50%, -50%) scale(1.2); opacity: 0; }
-        }
-
-        .animate-pop { animation: pop 0.6s ease-out forwards; }
+        .setting-group { margin-bottom: 30px; background: #f0f0f0; padding: 20px; border-radius: 20px; }
+        .setting-label { font-weight: bold; font-size: 1.8rem; display: block; margin-bottom: 15px; }
+        .obj-options, .bg-options, .size-options { display: flex; gap: 15px; flex-wrap: wrap; justify-content: center; }
+        .obj-btn, .size-btn { flex: 1; min-width: 120px; padding: 15px; background: white; border: 4px solid #ccc; border-radius: 15px; cursor: pointer; font-size: 1.2rem; font-weight: bold; }
+        .selected { background: #0056b3 !important; color: white !important; border-color: #003d80 !important; }
+        .bg-option { width: 150px; height: 100px; border: 5px solid #ccc; border-radius: 15px; object-fit: cover; cursor: pointer; }
+        #close-settings { width: 100%; padding: 25px; background: #28a745; color: white; font-size: 2rem; border: none; border-radius: 20px; cursor: pointer; margin-top: 30px; }
+        #win-effect { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 100px; pointer-events: none; z-index: 2000; display: none; }
     </style>
 </head>
 <body>
 
-    <div id="game-container">
-        <div id="target-label">
-            <img id="target-img" src="" alt="目標">
-            <span>目標物</span>
-        </div>
-    </div>
+    <audio id="success-sound" src="cheer.mp3"></audio>
+    <div id="win-effect">🎉</div>
 
-    <div id="ui-layer">
-        <button class="settings-btn" id="open-settings">⚙️</button>
+    <div id="game-container">
+        <div id="dim-overlay"></div>
+        <img id="game-object" src="" alt="目標物">
+        <div id="settings-btn">⚙️</div>
     </div>
 
     <div id="settings-panel">
-        <h3 style="margin-top:0">遊戲設定</h3>
-        
-        <div class="setting-group">
-            <span class="setting-label">1. 尋找模式</span>
-            <div class="mode-btn-group">
-                <label>
-                    <input type="radio" name="mode" value="1" checked>
-                    <div class="mode-btn">找圖片</div>
-                </label>
-                <label>
-                    <input type="radio" name="mode" value="2">
-                    <div class="mode-btn">找半隱藏</div>
-                </label>
+        <div style="max-width: 800px; margin: 0 auto;">
+            <h2>⚙️ 遊戲設定</h2>
+            
+            <div class="setting-group">
+                <span class="setting-label">1. 選擇背景圖片</span>
+                <div class="bg-options">
+                    <img src="HK.jpg" class="bg-option selected" data-bg="HK.jpg">
+                    <img src="MTR2.jpg" class="bg-option" data-bg="MTR2.jpg">
+                    <img src="supermarket.jpg" class="bg-option" data-bg="supermarket.jpg">
+                </div>
             </div>
-        </div>
 
-        <div class="setting-group">
-            <span class="setting-label">2. 選擇背景圖片</span>
-            <div class="bg-options">
-                <img src="HK.jpg" class="bg-option selected" data-bg="HK.jpg" alt="香港街景">
-                <img src="MTR2.jpg" class="bg-option" data-bg="MTR2.jpg" alt="港鐵月台">
-                <img src="supermarket.jpg" class="bg-option" data-bg="supermarket.jpg" alt="超市">
+            <div class="setting-group">
+                <span class="setting-label">2. 選擇目標物</span>
+                <div class="obj-options">
+                    <button class="obj-btn" data-obj="apple.jpg">🍎 蘋果</button>
+                    <button class="obj-btn selected" data-obj="banana.jpg">🍌 香蕉</button>
+                    <button class="obj-btn" data-obj="mtr.jpg">🚇 港鐵</button>
+                    <button class="obj-btn" data-obj="taxi.jpg">🚕 的士</button>
+                    <button class="obj-btn" data-obj="minibus.jpg">🚌 小巴</button>
+                </div>
             </div>
-        </div>
 
-        <div class="setting-group">
-            <span class="setting-label">3. 選擇目標物</span>
-            <div class="obj-options">
-                <button class="obj-btn" data-obj="apple.jpg">🍎 蘋果</button>
-                <button class="obj-btn selected" data-obj="banana.jpg">🍌 香蕉</button>
-                <button class="obj-btn" data-obj="mtr.jpg">🚇 港鐵</button>
-                <button class="obj-btn" data-obj="taxi.jpg">🚕 的士</button>
-                <button class="obj-btn" data-obj="minibus.jpg">🚌 小巴</button>
+            <div class="setting-group">
+                <span class="setting-label">3. 目標物件大小</span>
+                <div class="size-options">
+                    <button class="size-btn" data-size="small">小</button>
+                    <button class="size-btn selected" data-size="medium">中</button>
+                    <button class="size-btn" data-size="large">大</button>
+                </div>
             </div>
-        </div>
 
-        <div class="setting-group">
-            <span class="setting-label">4. 背景暗度程度</span>
-            <div class="slider-container">
-                <input type="range" id="dim-slider" min="0" max="100" value="0">
-                <span id="dim-value">0%</span>
+            <div class="setting-group">
+                <span class="setting-label">4. 背景變暗程度</span>
+                <input type="range" id="dim-slider" min="0" max="100" value="0" style="width: 100%;">
+                <span id="dim-value" style="font-size: 1.5rem; font-weight: bold;">0%</span>
             </div>
-        </div>
 
-        <button id="close-settings">開始遊戲</button>
+            <button id="close-settings">✅ 完成，開始遊戲</button>
+        </div>
     </div>
 
-    <div id="feedback">🎉</div>
-
-    <audio id="success-sound" src="cheer.mp3"></audio>
-
     <script>
+        const gameState = { background: 'HK.jpg', object: 'banana.jpg', size: 'medium', dim: 0 };
+        const sizePx = { small: 100, medium: 180, large: 300 };
+
+        const gameObj = document.getElementById('game-object');
         const container = document.getElementById('game-container');
-        const targetLabel = document.getElementById('target-label');
-        const targetImg = document.getElementById('target-img');
-        const settingsPanel = document.getElementById('settings-panel');
-        const openBtn = document.getElementById('open-settings');
-        const closeBtn = document.getElementById('close-settings');
-        const dimSlider = document.getElementById('dim-slider');
-        const dimText = document.getElementById('dim-value');
-        const feedback = document.getElementById('feedback');
-        const successSound = document.getElementById('success-sound');
+        const audio = document.getElementById('success-sound');
+        const effect = document.getElementById('win-effect');
 
-        let currentBg = 'HK.jpg';
-        let currentObj = 'banana.jpg';
-        let currentMode = '1'; // 1: 圖標, 2: 隱藏
-
-        // 初始化背景
-        container.style.backgroundImage = `url(${currentBg})`;
-
-        // 開關設定
-        openBtn.onclick = () => settingsPanel.style.display = 'block';
-        closeBtn.onclick = () => {
-            settingsPanel.style.display = 'none';
-            resetTarget();
-        };
-
-        // 背景選擇
-        document.querySelectorAll('.bg-option').forEach(img => {
-            img.onclick = () => {
-                document.querySelector('.bg-option.selected').classList.remove('selected');
-                img.classList.add('selected');
-                currentBg = img.dataset.bg;
-                container.style.backgroundImage = `url(${currentBg})`;
-            };
-        });
-
-        // 目標物選擇
-        document.querySelectorAll('.obj-btn').forEach(btn => {
-            btn.onclick = () => {
-                document.querySelector('.obj-btn.selected').classList.remove('selected');
-                btn.classList.add('selected');
-                currentObj = btn.dataset.obj;
-            };
-        });
-
-        // 模式切換
-        document.querySelectorAll('input[name="mode"]').forEach(input => {
-            input.onchange = () => currentMode = input.value;
-        });
-
-        // 亮度控制
-        dimSlider.oninput = (e) => {
-            const val = e.target.value;
-            dimText.innerText = val + '%';
-            container.style.filter = `brightness(${1 - val/100})`;
-        };
-
-        // 隨機放置目標
-        function resetTarget() {
-            targetImg.src = currentObj;
-            
-            // 隨機坐標 (5% - 85% 避免出界)
-            const x = Math.random() * 80 + 5;
-            const y = Math.random() * 80 + 5;
-            
-            targetLabel.style.left = x + '%';
-            targetLabel.style.top = y + '%';
-            targetLabel.style.display = 'block';
-
-            if (currentMode === '2') {
-                targetLabel.style.opacity = '0.3'; // 半隱藏模式
-                targetLabel.style.background = 'transparent';
-                targetLabel.querySelector('span').style.display = 'none';
-            } else {
-                targetLabel.style.opacity = '1';
-                targetLabel.style.background = 'rgba(255, 255, 255, 0.8)';
-                targetLabel.querySelector('span').style.display = 'inline';
-            }
+        function spawn() {
+            gameObj.src = gameState.object;
+            const size = sizePx[gameState.size];
+            gameObj.style.width = size + 'px';
+            gameObj.style.left = Math.random() * (window.innerWidth - size) + 'px';
+            gameObj.style.top = Math.random() * (window.innerHeight - size) + 'px';
+            gameObj.style.display = 'block';
         }
 
-        // 點擊判定
-        targetLabel.onclick = (e) => {
-            e.stopPropagation();
-            
-            // 播放音效
-            successSound.currentTime = 0;
-            successSound.play();
-
-            // 視覺回饋
-            feedback.classList.remove('animate-pop');
-            void feedback.offsetWidth; // 觸發重繪
-            feedback.classList.add('animate-pop');
-
-            // 重新整理目標
-            setTimeout(resetTarget, 600);
+        gameObj.onclick = () => {
+            audio.currentTime = 0;
+            audio.play();
+            effect.style.display = 'block';
+            setTimeout(() => { effect.style.display = 'none'; spawn(); }, 1000);
         };
 
-        // 點錯地方的懲罰 (可選)
-        container.onclick = () => {
-            console.log('點錯了');
+        document.getElementById('settings-btn').onclick = () => document.getElementById('settings-panel').style.display = 'block';
+        document.getElementById('close-settings').onclick = () => {
+            document.getElementById('settings-panel').style.display = 'none';
+            spawn();
         };
 
-        // 初始執行一次
-        resetTarget();
+        // 按鈕點擊處理
+        function setupBtns(className, stateKey) {
+            document.querySelectorAll('.' + className).forEach(btn => {
+                btn.onclick = (e) => {
+                    document.querySelectorAll('.' + className).forEach(b => b.classList.remove('selected'));
+                    btn.classList.add('selected');
+                    gameState[stateKey] = btn.dataset[stateKey] || btn.dataset.bg || btn.dataset.obj;
+                    if(stateKey === 'background') container.style.backgroundImage = `url(${gameState.background})`;
+                };
+            });
+        }
 
+        setupBtns('bg-option', 'background');
+        setupBtns('obj-btn', 'object');
+        setupBtns('size-btn', 'size');
+
+        document.getElementById('dim-slider').oninput = (e) => {
+            gameState.dim = e.target.value;
+            document.getElementById('dim-value').innerText = gameState.dim + '%';
+            document.getElementById('dim-overlay').style.opacity = gameState.dim / 100;
+        };
+
+        container.style.backgroundImage = `url(${gameState.background})`;
+        spawn();
     </script>
 </body>
 </html>
