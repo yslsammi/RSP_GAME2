@@ -3,91 +3,78 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>視覺搜尋 - 眼神點強制修正版</title>
+    <title>視覺搜尋 - 紅點診斷版</title>
     <script src="https://webgazer.cs.brown.edu/webgazer.js"></script>
     <style>
-        body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: white; }
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; background: #eee; overflow: hidden; }
         
-        /* 這是我們手動寫的紅點，確保它永遠在最前方 */
+        /* 強制最高層級的紅點 */
         #custom-dot {
-            position: fixed;
-            width: 30px;
-            height: 30px;
-            background: rgba(255, 0, 0, 0.8);
-            border: 3px solid white;
-            border-radius: 50%;
-            z-index: 2147483647; /* 網頁能設定的最高層級 */
-            pointer-events: none;
-            display: none; /* 初始隱藏 */
-            box-shadow: 0 0 15px red;
+            position: fixed; width: 40px; height: 40px;
+            background: red !important; border: 4px solid black !important;
+            border-radius: 50%; z-index: 999999;
+            pointer-events: none; display: none;
             transform: translate(-50%, -50%);
+            box-shadow: 0 0 20px rgba(255,0,0,1);
         }
 
-        #game-object {
-            position: absolute; width: 200px; display: none; z-index: 10;
+        #ui-panel {
+            position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            background: white; padding: 30px; border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2); z-index: 100000;
+            text-align: center; width: 80%;
         }
-
-        #ui-layer {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(255,255,255,0.8); z-index: 1000;
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-        }
-        button { padding: 20px 40px; font-size: 24px; cursor: pointer; background: #ff4444; color: white; border: none; border-radius: 10px; }
+        button { padding: 15px 30px; font-size: 1.2rem; margin: 10px; cursor: pointer; border-radius: 10px; border: none; }
+        #test-btn { background: #ff9800; color: white; }
+        #start-eye { background: #2196f3; color: white; }
     </style>
 </head>
 <body>
 
     <div id="custom-dot"></div>
 
-    <div id="ui-layer">
-        <h1>👁️ 強制喚起偵測點</h1>
-        <p>1. 點擊按鈕後，請觀察是否有「紅色圓圈」出現。</p>
-        <button id="start-btn">啟動眼動儀</button>
-        <p style="margin-top:20px;">2. 如果看到紅點了，請點擊紅點進行校準。</p>
-        <button id="play-btn" style="background:#4CAF50; display:none; margin-top:20px;">進入遊戲</button>
-    </div>
+    <div id="ui-panel">
+        <h2 id="status">紅點診斷測試</h2>
+        
+        <button id="test-btn">第一步：測試紅點是否能顯示</button>
+        <p>（點擊後，紅點應該會出現在按鈕正中央）</p>
+        
+        <hr>
 
-    <img id="game-object" src="banana.jpg">
+        <button id="start-eye">第二步：啟動眼動儀</button>
+        <p>（啟動後，請觀察紅點是否跟隨眼睛移動）</p>
+    </div>
 
     <script>
         const dot = document.getElementById('custom-dot');
-        const gameObj = document.getElementById('game-object');
-        const startBtn = document.getElementById('start-btn');
-        const playBtn = document.getElementById('play-btn');
+        const status = document.getElementById('status');
 
-        function spawn() {
-            gameObj.style.left = Math.random() * (window.innerWidth - 200) + 'px';
-            gameObj.style.top = Math.random() * (window.innerHeight - 200) + 'px';
-            gameObj.style.display = 'block';
-        }
+        // 第一步：手動測試顯示功能
+        document.getElementById('test-btn').onclick = function() {
+            dot.style.display = 'block';
+            dot.style.left = '50%';
+            dot.style.top = '40%';
+            status.innerText = "✅ 紅點顯示功能正常！請進行第二步。";
+            status.style.color = "green";
+        };
 
-        startBtn.onclick = function() {
+        // 第二步：眼動儀接管
+        document.getElementById('start-eye').onclick = function() {
+            status.innerText = "正在嘗試連接 AI...";
+            
             webgazer.setGazeListener((data, elapsed) => {
                 if (data == null) return;
 
-                // 手動更新我們的紅點位置
+                // 強制把紅點移動到 AI 算出的位置
                 dot.style.display = 'block';
                 dot.style.left = data.x + 'px';
                 dot.style.top = data.y + 'px';
-
-                // 遊戲判定
-                const rect = gameObj.getBoundingClientRect();
-                if (data.x >= rect.left && data.x <= rect.right && data.y >= rect.top && data.y <= rect.bottom) {
-                    gameObj.style.display = 'none';
-                    setTimeout(spawn, 500);
-                }
+                
+                status.innerText = "👁️ AI 座標更新中：" + Math.round(data.x) + ", " + Math.round(data.y);
             }).begin();
 
-            webgazer.showVideoPreview(true); // 顯示鏡頭預覽
-            webgazer.showPredictionPoints(false); // 關閉官方點，用我們手寫的
-            
-            startBtn.style.display = 'none';
-            playBtn.style.display = 'block';
-        };
-
-        playBtn.onclick = function() {
-            document.getElementById('ui-layer').style.display = 'none';
-            spawn();
+            webgazer.showVideoPreview(true);
+            webgazer.showPredictionPoints(false); // 關閉官方點
         };
     </script>
 </body>
