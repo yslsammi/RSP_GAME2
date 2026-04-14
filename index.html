@@ -13,11 +13,7 @@
         #game-container {
             position: relative; width: 100vw; height: 100vh;
             background-size: cover; background-position: center; transition: all 0.3s;
-            background-color: #333; /* 預設背景色 */
-        }
-        #dim-overlay {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background-color: black; opacity: 0; pointer-events: none; z-index: 1;
+            background-color: #333;
         }
         #game-object {
             position: absolute; cursor: pointer; z-index: 10;
@@ -26,55 +22,43 @@
         }
         #settings-btn {
             position: absolute; top: 20px; left: 20px; width: 60px; height: 60px;
-            background-color: #fff; border-radius: 15px; border: 4px solid #333;
+            background: white; border-radius: 15px; border: 4px solid #333;
             font-size: 30px; display: flex; justify-content: center; align-items: center;
-            cursor: pointer; z-index: 999; box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            cursor: pointer; z-index: 999;
         }
         #settings-panel {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background-color: #fff; z-index: 1001; padding: 20px; box-sizing: border-box;
+            background: #fff; z-index: 1001; padding: 20px; box-sizing: border-box;
             display: none; overflow-y: auto;
         }
         .setting-group { margin-bottom: 25px; background: #f0f0f0; padding: 15px; border-radius: 20px; }
         .setting-label { font-weight: bold; font-size: 1.5rem; display: block; margin-bottom: 12px; }
-        
         .bg-options, .obj-options, .size-options { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; }
-        
-        /* 背景選項樣式 */
         .bg-option { width: 100px; height: 70px; border: 4px solid #ccc; border-radius: 12px; cursor: pointer; object-fit: cover; }
-        .color-option { display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 0.8rem; border: 4px solid #ccc; }
-
-        /* 按鈕樣式 */
+        .color-option { display: flex; align-items: center; justify-content: center; font-weight: bold; border: 4px solid #ccc; }
         .obj-btn, .size-btn { padding: 12px 20px; background: white; border: 3px solid #ccc; border-radius: 12px; cursor: pointer; font-weight: bold; font-size: 1.1rem; }
-        .selected { border-color: #007AFF !important; background: #e7f3ff !important; transform: scale(1.05); }
-        
+        .selected { border-color: #007AFF !important; background: #e7f3ff !important; }
         #close-settings { width: 100%; padding: 20px; background: #28a745; color: white; font-size: 1.6rem; border: none; border-radius: 15px; cursor: pointer; margin-top: 20px; font-weight: bold; }
     </style>
 </head>
 <body>
-
     <audio id="success-sound" src="cheer.mp3"></audio>
-    
     <div id="game-container">
-        <div id="dim-overlay"></div>
-        <img id="game-object" src="" alt="目標物">
+        <img id="game-object" src="">
         <div id="settings-btn">⚙️</div>
     </div>
-
     <div id="settings-panel">
         <h2 style="text-align: center;">⚙️ 遊戲設定</h2>
-        
         <div class="setting-group">
-            <span class="setting-label">1. 選擇背景 (含純色練習)</span>
+            <span class="setting-label">1. 選擇背景圖片</span>
             <div class="bg-options">
                 <img src="HK.jpg" class="bg-option selected" data-bg="HK.jpg">
                 <img src="MTR2.jpg" class="bg-option" data-bg="MTR2.jpg">
                 <img src="supermarket.jpg" class="bg-option" data-bg="supermarket.jpg">
-                <div class="bg-option color-option" data-bg="white" style="background:white; color: #000;">純白</div>
-                <div class="bg-option color-option" data-bg="black" style="background:black; color: #fff;">純黑</div>
+                <div class="bg-option color-option" data-bg="white" style="background:white; color:black;">純白</div>
+                <div class="bg-option color-option" data-bg="black" style="background:black; color:white;">純黑</div>
             </div>
         </div>
-
         <div class="setting-group">
             <span class="setting-label">2. 選擇目標物</span>
             <div class="obj-options">
@@ -85,9 +69,82 @@
                 <button class="obj-btn" data-obj="minibus.jpg">🚌 小巴</button>
             </div>
         </div>
-
         <div class="setting-group">
-            <span class="setting-label">3. 物件出現大小</span>
+            <span class="setting-label">3. 目標物件大小</span>
             <div class="size-options">
-                <button class="size-btn" data-size="small">小 (訓練)</button>
-                <button class="size-btn selected" data-size="medium">中 (標準)</button
+                <button class="size-btn" data-size="small">小</button>
+                <button class="size-btn selected" data-size="medium">中</button>
+                <button class="size-btn" data-size="large">大</button>
+            </div>
+        </div>
+        <button id="close-settings">✅ 完成並開始</button>
+    </div>
+    <script>
+        const state = { bg: 'HK.jpg', obj: 'banana.jpg', size: 'medium' };
+        
+        // 更新後的尺寸設定：80px, 200px, 450px
+        const sizes = { small: 80, medium: 200, large: 450 };
+
+        const gameObj = document.getElementById('game-object');
+        const container = document.getElementById('game-container');
+
+        function spawn() {
+            gameObj.src = state.obj;
+            const s = sizes[state.size];
+            gameObj.style.width = s + 'px';
+            
+            // 隨機坐標
+            const maxX = window.innerWidth - s;
+            const maxY = window.innerHeight - s;
+            gameObj.style.left = Math.random() * maxX + 'px';
+            gameObj.style.top = Math.random() * maxY + 'px';
+            gameObj.style.display = 'block';
+        }
+
+        gameObj.onclick = () => {
+            document.getElementById('success-sound').play();
+            gameObj.style.display = 'none';
+            setTimeout(spawn, 500);
+        };
+
+        document.getElementById('settings-btn').onclick = () => document.getElementById('settings-panel').style.display = 'block';
+        
+        document.getElementById('close-settings').onclick = () => {
+            document.getElementById('settings-panel').style.display = 'none';
+            spawn();
+        };
+
+        // 背景選擇
+        document.querySelectorAll('.bg-option').forEach(el => {
+            el.onclick = () => {
+                document.querySelectorAll('.bg-option').forEach(b => b.classList.remove('selected'));
+                el.classList.add('selected');
+                state.bg = el.dataset.bg;
+                if(state.bg === 'white') { container.style.backgroundImage = 'none'; container.style.backgroundColor = 'white'; }
+                else if(state.bg === 'black') { container.style.backgroundImage = 'none'; container.style.backgroundColor = 'black'; }
+                else { container.style.backgroundImage = `url(${state.bg})`; }
+            };
+        });
+
+        // 物件選擇
+        document.querySelectorAll('.obj-btn').forEach(el => {
+            el.onclick = () => {
+                document.querySelectorAll('.obj-btn').forEach(b => b.classList.remove('selected'));
+                el.classList.add('selected');
+                state.obj = el.dataset.obj;
+            };
+        });
+
+        // 大小選擇
+        document.querySelectorAll('.size-btn').forEach(el => {
+            el.onclick = () => {
+                document.querySelectorAll('.size-btn').forEach(b => b.classList.remove('selected'));
+                el.classList.add('selected');
+                state.size = el.dataset.size;
+            };
+        });
+
+        spawn();
+    </script>
+</body>
+</html>
