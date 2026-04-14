@@ -3,74 +3,84 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>視覺搜尋遊戲 - 紅點強化版</title>
+    <title>視覺搜尋遊戲 - 終極眼動版</title>
     <script src="https://webgazer.cs.brown.edu/webgazer.js"></script>
     <style>
-        body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background-color: #000; }
-        #game-container { position: relative; width: 100vw; height: 100vh; background-color: #000; }
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background-color: #000; font-family: sans-serif; }
+        #game-container { position: relative; width: 100vw; height: 100vh; background-color: #000; background-size: cover; }
         #game-object { position: absolute; cursor: pointer; display: none; object-fit: contain; z-index: 10; filter: drop-shadow(0 0 10px white); }
         #settings-btn { position: absolute; top: 20px; left: 20px; width: 60px; height: 60px; background: white; border-radius: 15px; font-size: 30px; display: flex; justify-content: center; align-items: center; cursor: pointer; z-index: 999; }
-        #settings-panel { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #fff; z-index: 1001; padding: 20px; box-sizing: border-box; display: none; overflow-y: auto; }
+        #settings-panel { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #fff; z-index: 10001; padding: 20px; box-sizing: border-box; display: none; overflow-y: auto; }
         
-        /* 這裡是關鍵：強制顯示的巨大紅點 */
+        /* 終極紅點：帶發光效果 */
         #eye-dot {
-            position: fixed;
-            width: 40px;
-            height: 40px;
-            background: rgba(255, 0, 0, 0.7);
-            border: 3px solid #fff;
-            border-radius: 50%;
-            pointer-events: none; /* 讓紅點不影響點擊 */
-            z-index: 999999;
-            display: none;
-            box-shadow: 0 0 20px red;
+            position: fixed; width: 35px; height: 35px;
+            background: rgba(255, 0, 0, 0.8); border: 3px solid white;
+            border-radius: 50%; pointer-events: none;
+            z-index: 20000; display: none;
+            box-shadow: 0 0 20px rgba(255, 0, 0, 0.8);
             transform: translate(-50%, -50%);
+            transition: width 0.1s, height 0.1s;
         }
-        .obj-btn { padding: 15px; background: #eee; border: 1px solid #ccc; border-radius: 10px; cursor: pointer; width: 100%; margin-bottom: 10px; font-size: 1.2rem; }
+
+        /* 校準輔助點 */
+        .calib-point {
+            position: fixed; width: 40px; height: 40px; background: #ffeb3b;
+            border: 4px solid #f57f17; border-radius: 50%; z-index: 10002;
+            cursor: pointer; display: none;
+        }
+        .obj-btn { padding: 15px; background: #2196f3; color: white; border: none; border-radius: 10px; cursor: pointer; width: 100%; margin-bottom: 10px; font-size: 1.2rem; }
     </style>
 </head>
 <body>
     <audio id="success-sound" src="cheer.mp3"></audio>
     <div id="eye-dot"></div>
     
+    <div class="calib-point" id="pt1" style="top: 10%; left: 10%;"></div>
+    <div class="calib-point" id="pt2" style="top: 10%; right: 10%;"></div>
+    <div class="calib-point" id="pt3" style="top: 50%; left: 50%;"></div>
+    <div class="calib-point" id="pt4" style="bottom: 10%; left: 10%;"></div>
+    <div class="calib-point" id="pt5" style="bottom: 10%; right: 10%;"></div>
+
     <div id="game-container">
         <img id="game-object" src="">
         <div id="settings-btn">⚙️</div>
     </div>
 
     <div id="settings-panel">
-        <h2>👁️ 眼動追蹤校準</h2>
-        <div style="background: #fff3cd; padding: 15px; border-radius: 10px; margin-bottom: 20px;">
-            <button id="start-eye" class="obj-btn" style="background: #ffc107;">1. 點我啟動並顯示紅點</button>
-            <p>啟動後，請盯着紅點，並**用滑鼠去點擊紅點**幾次進行校準。</p>
+        <h2 style="text-align:center;">👁️ 眼動功能診斷</h2>
+        <div style="background: #e3f2fd; padding: 15px; border-radius: 10px; margin-bottom: 20px;">
+            <button id="start-eye" class="obj-btn">1. 啟動攝影機與紅點</button>
+            <button id="show-calib" class="obj-btn" style="background:#ff9800; display:none;">2. 顯示校準點 (提高準確度)</button>
         </div>
-        <button id="close-settings" class="obj-btn" style="background: #28a745; color: white;">2. 完成校準，開始遊戲</button>
+        <p id="msg" style="color:blue; text-align:center; font-weight:bold;"></p>
+        <button id="close-settings" class="obj-btn" style="background: #4caf50;">3. 完成並開始遊戲</button>
     </div>
 
     <script>
         const dot = document.getElementById('eye-dot');
         const gameObj = document.getElementById('game-object');
+        const msg = document.getElementById('msg');
 
         function spawn() {
             gameObj.src = 'banana.jpg';
-            gameObj.style.width = '250px';
-            gameObj.style.left = Math.random() * (window.innerWidth - 250) + 'px';
-            gameObj.style.top = Math.random() * (window.innerHeight - 250) + 'px';
+            gameObj.style.width = '200px';
+            gameObj.style.left = Math.random() * (window.innerWidth - 200) + 'px';
+            gameObj.style.top = Math.random() * (window.innerHeight - 200) + 'px';
             gameObj.style.display = 'block';
         }
 
         document.getElementById('start-eye').onclick = function() {
+            msg.innerText = "正在喚醒紅點...";
             webgazer.setGazeListener((data, elapsed) => {
                 if (data) {
-                    // 更新自定義紅點位置
                     dot.style.display = 'block';
                     dot.style.left = data.x + 'px';
                     dot.style.top = data.y + 'px';
 
-                    // 檢查是否注視到香蕉
+                    // 遊戲判定
                     const rect = gameObj.getBoundingClientRect();
-                    if (data.x >= rect.left && data.x <= rect.right &&
-                        data.y >= rect.top && data.y <= rect.bottom) {
+                    if (data.x >= rect.left && data.x <= rect.right && data.y >= rect.top && data.y <= rect.bottom) {
                         if(gameObj.style.display !== 'none') {
                             document.getElementById('success-sound').play();
                             gameObj.style.display = 'none';
@@ -79,16 +89,36 @@
                     }
                 }
             }).begin();
-            webgazer.showVideoPreview(true).showPredictionPoints(false); // 關閉官方小點，用我們的大紅點
+            webgazer.showVideoPreview(true).showPredictionPoints(false);
+            document.getElementById('show-calib').style.display = 'block';
+            msg.innerText = "紅點已啟用！如果看不到，請嘗試縮小瀏覽器視窗再放大。";
         };
+
+        // 顯示校準點邏輯
+        document.getElementById('show-calib').onclick = () => {
+            document.querySelectorAll('.calib-point').forEach(p => p.style.display = 'block');
+            msg.innerText = "請盯着黃色圓點並點擊它們，每個點點擊 3 次。";
+        };
+
+        // 點擊校準點後自動消失
+        document.querySelectorAll('.calib-point').forEach(p => {
+            let count = 0;
+            p.onclick = () => {
+                count++;
+                p.style.opacity = 1 - (count * 0.3);
+                if(count >= 3) p.style.display = 'none';
+            };
+        });
 
         document.getElementById('settings-btn').onclick = () => document.getElementById('settings-panel').style.display = 'block';
         document.getElementById('close-settings').onclick = () => {
             document.getElementById('settings-panel').style.display = 'none';
+            document.querySelectorAll('.calib-point').forEach(p => p.style.display = 'none');
             spawn();
         };
 
         spawn();
     </script>
 </body>
+</html>
 </html>
