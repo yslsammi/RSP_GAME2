@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>視覺搜尋遊戲 - 香港版</title>
+    <title>視覺搜尋遊戲 - 眼動模擬版</title>
+    <script src="https://webgazer.cs.brown.edu/webgazer.js"></script>
     <style>
         body, html {
             margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden;
@@ -18,7 +19,7 @@
         #game-object {
             position: absolute; cursor: pointer; z-index: 10;
             display: none; object-fit: contain; 
-            filter: drop-shadow(0 0 8px rgba(255,255,255,0.7));
+            filter: drop-shadow(0 0 10px rgba(255,255,255,0.8));
         }
         #settings-btn {
             position: absolute; top: 20px; left: 20px; width: 60px; height: 60px;
@@ -39,18 +40,40 @@
         .obj-btn, .size-btn { padding: 12px 20px; background: white; border: 3px solid #ccc; border-radius: 12px; cursor: pointer; font-weight: bold; font-size: 1.1rem; }
         .selected { border-color: #007AFF !important; background: #e7f3ff !important; }
         #close-settings { width: 100%; padding: 20px; background: #28a745; color: white; font-size: 1.6rem; border: none; border-radius: 15px; cursor: pointer; margin-top: 20px; font-weight: bold; }
+        
+        /* 眼動提示紅色小點 */
+        #eye-cursor {
+            position: fixed; width: 25px; height: 25px; background: rgba(255, 0, 0, 0.6);
+            border-radius: 50%; pointer-events: none; z-index: 9999; display: none;
+            box-shadow: 0 0 10px red;
+        }
     </style>
 </head>
 <body>
     <audio id="success-sound" src="cheer.mp3"></audio>
+    <div id="eye-cursor"></div>
+    
     <div id="game-container">
         <img id="game-object" src="">
         <div id="settings-btn">⚙️</div>
     </div>
+
     <div id="settings-panel">
         <h2 style="text-align: center;">⚙️ 遊戲設定</h2>
+        
+        <div class="setting-group" style="border: 2px solid #ff4444;">
+            <span class="setting-label">👀 眼動控制儀 (Beta)</span>
+            <button id="toggle-eye" class="obj-btn" style="width: 100%;">開啟鏡頭追蹤</button>
+            <p style="font-size: 0.85rem; color: #666; margin-top: 10px;">
+                開啟後：<br>
+                1. 請允許瀏覽器使用鏡頭。<br>
+                2. 盯着螢幕上的**紅色圓點**移動滑鼠並點擊，進行初步校準。<br>
+                3. 用眼睛注視圖片 0.5 秒即可觸發成功。
+            </p>
+        </div>
+
         <div class="setting-group">
-            <span class="setting-label">1. 選擇背景圖片 (純色在最後面)</span>
+            <span class="setting-label">1. 背景圖片</span>
             <div class="bg-options">
                 <img src="HK.jpg" class="bg-option selected" data-bg="HK.jpg">
                 <img src="MTR2.jpg" class="bg-option" data-bg="MTR2.jpg">
@@ -59,8 +82,9 @@
                 <div class="bg-option color-option" data-bg="black" style="background:black; color:white;">純黑</div>
             </div>
         </div>
+
         <div class="setting-group">
-            <span class="setting-label">2. 選擇目標物</span>
+            <span class="setting-label">2. 目標物</span>
             <div class="obj-options">
                 <button class="obj-btn" data-obj="apple.jpg">🍎 蘋果</button>
                 <button class="obj-btn selected" data-obj="banana.jpg">🍌 香蕉</button>
@@ -69,21 +93,25 @@
                 <button class="obj-btn" data-obj="minibus.jpg">🚌 小巴</button>
             </div>
         </div>
+
         <div class="setting-group">
-            <span class="setting-label">3. 目標物件大小</span>
+            <span class="setting-label">3. 目標大小</span>
             <div class="size-options">
-                <button class="size-btn" data-size="small">小</button>
-                <button class="size-btn selected" data-size="medium">中</button>
-                <button class="size-btn" data-size="large">大</button>
+                <button class="size-btn" data-size="small">小 (80px)</button>
+                <button class="size-btn selected" data-size="medium">中 (200px)</button>
+                <button class="size-btn" data-size="large">大 (450px)</button>
             </div>
         </div>
-        <button id="close-settings">✅ 完成並開始</button>
+
+        <button id="close-settings">✅ 儲存並開始</button>
     </div>
+
     <script>
-        const state = { bg: 'HK.jpg', obj: 'banana.jpg', size: 'medium' };
-        const sizes = { small: 100, medium: 230, large: 450 };
+        const state = { bg: 'HK.jpg', obj: 'banana.jpg', size: 'medium', eyeEnabled: false };
+        const sizes = { small: 80, medium: 200, large: 450 };
         const gameObj = document.getElementById('game-object');
         const container = document.getElementById('game-container');
+        const eyeCursor = document.getElementById('eye-cursor');
 
         function spawn() {
             gameObj.src = state.obj;
@@ -96,12 +124,47 @@
             gameObj.style.display = 'block';
         }
 
-        gameObj.onclick = () => {
+        function win() {
             document.getElementById('success-sound').play();
             gameObj.style.display = 'none';
             setTimeout(spawn, 500);
+        }
+
+        gameObj.onclick = win;
+
+        // --- 眼動儀功能邏輯 ---
+        document.getElementById('toggle-eye').onclick = function() {
+            if (!state.eyeEnabled) {
+                this.innerText = "正在啟動鏡頭...";
+                webgazer.setGazeListener(function(data, elapsedTime) {
+                    if (data == null) return;
+                    
+                    // 更新提示點
+                    eyeCursor.style.display = 'block';
+                    eyeCursor.style.left = data.x + 'px';
+                    eyeCursor.style.top = data.y + 'px';
+
+                    // 碰撞偵測：眼睛是否盯着圖片
+                    const rect = gameObj.getBoundingClientRect();
+                    if (data.x >= rect.left && data.x <= rect.right &&
+                        data.y >= rect.top && data.y <= rect.bottom) {
+                        if (gameObj.style.display !== 'none') win();
+                    }
+                }).begin();
+                
+                webgazer.showVideoPreview(true).showPredictionPoints(false);
+                state.eyeEnabled = true;
+                this.innerText = "關閉眼動模式";
+            } else {
+                webgazer.pause();
+                eyeCursor.style.display = 'none';
+                webgazer.showVideoPreview(false);
+                state.eyeEnabled = false;
+                this.innerText = "開啟鏡頭追蹤";
+            }
         };
 
+        // --- UI 選項邏輯 ---
         document.getElementById('settings-btn').onclick = () => document.getElementById('settings-panel').style.display = 'block';
         document.getElementById('close-settings').onclick = () => {
             document.getElementById('settings-panel').style.display = 'none';
@@ -121,6 +184,7 @@
 
         document.querySelectorAll('.obj-btn').forEach(el => {
             el.onclick = () => {
+                if(!el.dataset.obj) return;
                 document.querySelectorAll('.obj-btn').forEach(b => b.classList.remove('selected'));
                 el.classList.add('selected');
                 state.obj = el.dataset.obj;
