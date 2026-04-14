@@ -99,31 +99,31 @@
             const maxX = window.innerWidth - s;
             const maxY = window.innerHeight - s;
             
-            // 隨機位置
             gameObj.style.left = Math.random() * maxX + 'px';
             gameObj.style.top = Math.random() * maxY + 'px';
             gameObj.style.display = 'block';
         }
 
-        // 點擊事件
+        // 修改這裡：點擊後等待 3 秒 (3000 毫秒)
         gameObj.onclick = () => {
             document.getElementById('success-sound').play();
-            gameObj.style.display = 'none';
-            setTimeout(spawn, 500);
+            gameObj.style.display = 'none'; // 點擊後立刻隱藏
+            
+            setTimeout(() => {
+                spawn(); // 3 秒後才出現下一張
+            }, 3000); 
         };
 
-        // 開啟設定
         document.getElementById('settings-btn').onclick = () => {
             document.getElementById('settings-panel').style.display = 'block';
         };
 
-        // 關閉設定並重新開始
         document.getElementById('close-settings').onclick = () => {
             document.getElementById('settings-panel').style.display = 'none';
             spawn();
         };
 
-        // 背景切換邏輯
+        // 背景切換
         document.querySelectorAll('.bg-option').forEach(el => {
             el.onclick = () => {
                 document.querySelectorAll('.bg-option').forEach(b => b.classList.remove('selected'));
@@ -141,7 +141,7 @@
             };
         });
 
-        // 目標物切換邏輯
+        // 目標物切換
         document.querySelectorAll('.obj-btn').forEach(el => {
             el.onclick = () => {
                 document.querySelectorAll('.obj-btn').forEach(b => b.classList.remove('selected'));
@@ -150,7 +150,7 @@
             };
         });
 
-        // 大小切換邏輯
+        // 大小切換
         document.querySelectorAll('.size-btn').forEach(el => {
             el.onclick = () => {
                 document.querySelectorAll('.size-btn').forEach(b => b.classList.remove('selected'));
@@ -159,7 +159,6 @@
             };
         });
 
-        // 初始載入
         spawn();
     </script>
 </body>
