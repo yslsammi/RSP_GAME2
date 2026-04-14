@@ -12,42 +12,49 @@
         }
         #game-container {
             position: relative; width: 100vw; height: 100vh;
-            background-size: cover; background-position: center; transition: background-image 0.5s;
+            background-size: cover; background-position: center; transition: all 0.3s;
+            background-color: #333; /* 預設背景色 */
         }
         #dim-overlay {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             background-color: black; opacity: 0; pointer-events: none; z-index: 1;
         }
         #game-object {
-            position: absolute; cursor: pointer; z-index: 10; transition: transform 0.1s;
-            display: none; object-fit: contain; filter: drop-shadow(0 0 10px rgba(255,255,255,0.9));
+            position: absolute; cursor: pointer; z-index: 10;
+            display: none; object-fit: contain; 
+            filter: drop-shadow(0 0 8px rgba(255,255,255,0.7));
         }
         #settings-btn {
             position: absolute; top: 20px; left: 20px; width: 60px; height: 60px;
             background-color: #fff; border-radius: 15px; border: 4px solid #333;
             font-size: 30px; display: flex; justify-content: center; align-items: center;
-            cursor: pointer; z-index: 999; box-shadow: 0 4px 8px rgba(0,0,0,0.5);
+            cursor: pointer; z-index: 999; box-shadow: 0 4px 10px rgba(0,0,0,0.3);
         }
         #settings-panel {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             background-color: #fff; z-index: 1001; padding: 20px; box-sizing: border-box;
             display: none; overflow-y: auto;
         }
-        .setting-group { margin-bottom: 30px; background: #f0f0f0; padding: 20px; border-radius: 20px; }
-        .setting-label { font-weight: bold; font-size: 1.8rem; display: block; margin-bottom: 15px; }
-        .obj-options, .bg-options, .size-options { display: flex; gap: 15px; flex-wrap: wrap; justify-content: center; }
-        .obj-btn, .size-btn { flex: 1; min-width: 120px; padding: 15px; background: white; border: 4px solid #ccc; border-radius: 15px; cursor: pointer; font-size: 1.2rem; font-weight: bold; }
-        .selected { background: #0056b3 !important; color: white !important; border-color: #003d80 !important; }
-        .bg-option { width: 150px; height: 100px; border: 5px solid #ccc; border-radius: 15px; object-fit: cover; cursor: pointer; }
-        #close-settings { width: 100%; padding: 25px; background: #28a745; color: white; font-size: 2rem; border: none; border-radius: 20px; cursor: pointer; margin-top: 30px; }
-        #win-effect { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 100px; pointer-events: none; z-index: 2000; display: none; }
+        .setting-group { margin-bottom: 25px; background: #f0f0f0; padding: 15px; border-radius: 20px; }
+        .setting-label { font-weight: bold; font-size: 1.5rem; display: block; margin-bottom: 12px; }
+        
+        .bg-options, .obj-options, .size-options { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; }
+        
+        /* 背景選項樣式 */
+        .bg-option { width: 100px; height: 70px; border: 4px solid #ccc; border-radius: 12px; cursor: pointer; object-fit: cover; }
+        .color-option { display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 0.8rem; border: 4px solid #ccc; }
+
+        /* 按鈕樣式 */
+        .obj-btn, .size-btn { padding: 12px 20px; background: white; border: 3px solid #ccc; border-radius: 12px; cursor: pointer; font-weight: bold; font-size: 1.1rem; }
+        .selected { border-color: #007AFF !important; background: #e7f3ff !important; transform: scale(1.05); }
+        
+        #close-settings { width: 100%; padding: 20px; background: #28a745; color: white; font-size: 1.6rem; border: none; border-radius: 15px; cursor: pointer; margin-top: 20px; font-weight: bold; }
     </style>
 </head>
 <body>
 
     <audio id="success-sound" src="cheer.mp3"></audio>
-    <div id="win-effect">🎉</div>
-
+    
     <div id="game-container">
         <div id="dim-overlay"></div>
         <img id="game-object" src="" alt="目標物">
@@ -55,103 +62,32 @@
     </div>
 
     <div id="settings-panel">
-        <div style="max-width: 800px; margin: 0 auto;">
-            <h2>⚙️ 遊戲設定</h2>
-            
-            <div class="setting-group">
-                <span class="setting-label">1. 選擇背景圖片</span>
-                <div class="bg-options">
-                    <img src="HK.jpg" class="bg-option selected" data-bg="HK.jpg">
-                    <img src="MTR2.jpg" class="bg-option" data-bg="MTR2.jpg">
-                    <img src="supermarket.jpg" class="bg-option" data-bg="supermarket.jpg">
-                </div>
+        <h2 style="text-align: center;">⚙️ 遊戲設定</h2>
+        
+        <div class="setting-group">
+            <span class="setting-label">1. 選擇背景 (含純色練習)</span>
+            <div class="bg-options">
+                <img src="HK.jpg" class="bg-option selected" data-bg="HK.jpg">
+                <img src="MTR2.jpg" class="bg-option" data-bg="MTR2.jpg">
+                <img src="supermarket.jpg" class="bg-option" data-bg="supermarket.jpg">
+                <div class="bg-option color-option" data-bg="white" style="background:white; color: #000;">純白</div>
+                <div class="bg-option color-option" data-bg="black" style="background:black; color: #fff;">純黑</div>
             </div>
-
-            <div class="setting-group">
-                <span class="setting-label">2. 選擇目標物</span>
-                <div class="obj-options">
-                    <button class="obj-btn" data-obj="apple.jpg">🍎 蘋果</button>
-                    <button class="obj-btn selected" data-obj="banana.jpg">🍌 香蕉</button>
-                    <button class="obj-btn" data-obj="mtr.jpg">🚇 港鐵</button>
-                    <button class="obj-btn" data-obj="taxi.jpg">🚕 的士</button>
-                    <button class="obj-btn" data-obj="minibus.jpg">🚌 小巴</button>
-                </div>
-            </div>
-
-            <div class="setting-group">
-                <span class="setting-label">3. 目標物件大小</span>
-                <div class="size-options">
-                    <button class="size-btn" data-size="small">小</button>
-                    <button class="size-btn selected" data-size="medium">中</button>
-                    <button class="size-btn" data-size="large">大</button>
-                </div>
-            </div>
-
-            <div class="setting-group">
-                <span class="setting-label">4. 背景變暗程度</span>
-                <input type="range" id="dim-slider" min="0" max="100" value="0" style="width: 100%;">
-                <span id="dim-value" style="font-size: 1.5rem; font-weight: bold;">0%</span>
-            </div>
-
-            <button id="close-settings">✅ 完成，開始遊戲</button>
         </div>
-    </div>
 
-    <script>
-        const gameState = { background: 'HK.jpg', object: 'banana.jpg', size: 'medium', dim: 0 };
-        const sizePx = { small: 100, medium: 200, large: 400 };
+        <div class="setting-group">
+            <span class="setting-label">2. 選擇目標物</span>
+            <div class="obj-options">
+                <button class="obj-btn" data-obj="apple.jpg">🍎 蘋果</button>
+                <button class="obj-btn selected" data-obj="banana.jpg">🍌 香蕉</button>
+                <button class="obj-btn" data-obj="mtr.jpg">🚇 港鐵</button>
+                <button class="obj-btn" data-obj="taxi.jpg">🚕 的士</button>
+                <button class="obj-btn" data-obj="minibus.jpg">🚌 小巴</button>
+            </div>
+        </div>
 
-        const gameObj = document.getElementById('game-object');
-        const container = document.getElementById('game-container');
-        const audio = document.getElementById('success-sound');
-        const effect = document.getElementById('win-effect');
-
-        function spawn() {
-            gameObj.src = gameState.object;
-            const size = sizePx[gameState.size];
-            gameObj.style.width = size + 'px';
-            gameObj.style.left = Math.random() * (window.innerWidth - size) + 'px';
-            gameObj.style.top = Math.random() * (window.innerHeight - size) + 'px';
-            gameObj.style.display = 'block';
-        }
-
-        gameObj.onclick = () => {
-            audio.currentTime = 0;
-            audio.play();
-            effect.style.display = 'block';
-            setTimeout(() => { effect.style.display = 'none'; spawn(); }, 1000);
-        };
-
-        document.getElementById('settings-btn').onclick = () => document.getElementById('settings-panel').style.display = 'block';
-        document.getElementById('close-settings').onclick = () => {
-            document.getElementById('settings-panel').style.display = 'none';
-            spawn();
-        };
-
-        // 按鈕點擊處理
-        function setupBtns(className, stateKey) {
-            document.querySelectorAll('.' + className).forEach(btn => {
-                btn.onclick = (e) => {
-                    document.querySelectorAll('.' + className).forEach(b => b.classList.remove('selected'));
-                    btn.classList.add('selected');
-                    gameState[stateKey] = btn.dataset[stateKey] || btn.dataset.bg || btn.dataset.obj;
-                    if(stateKey === 'background') container.style.backgroundImage = `url(${gameState.background})`;
-                };
-            });
-        }
-
-        setupBtns('bg-option', 'background');
-        setupBtns('obj-btn', 'object');
-        setupBtns('size-btn', 'size');
-
-        document.getElementById('dim-slider').oninput = (e) => {
-            gameState.dim = e.target.value;
-            document.getElementById('dim-value').innerText = gameState.dim + '%';
-            document.getElementById('dim-overlay').style.opacity = gameState.dim / 100;
-        };
-
-        container.style.backgroundImage = `url(${gameState.background})`;
-        spawn();
-    </script>
-</body>
-</html>
+        <div class="setting-group">
+            <span class="setting-label">3. 物件出現大小</span>
+            <div class="size-options">
+                <button class="size-btn" data-size="small">小 (訓練)</button>
+                <button class="size-btn selected" data-size="medium">中 (標準)</button
