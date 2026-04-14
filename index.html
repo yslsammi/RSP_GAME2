@@ -9,6 +9,7 @@
         body, html { 
             margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden;
             background-color: #f0f0f0; font-family: "SF Pro Text", "PingFang TC", sans-serif;
+            -webkit-user-select: none; user-select: none;
         }
         #game-container {
             position: relative; width: 100vw; height: 100vh;
@@ -16,7 +17,7 @@
             display: flex; align-items: center; justify-content: center;
         }
         #game-object {
-            position: absolute; cursor: pointer;
+            position: absolute; cursor: pointer; display: none;
             transition: transform 0.1s active;
             filter: drop-shadow(0 5px 15px rgba(0,0,0,0.3));
             -webkit-tap-highlight-color: transparent;
@@ -45,19 +46,20 @@
             background: rgba(0,0,0,0.4); display: none; z-index: 999;
         }
 
-        h2 { margin-top: 0; color: #333; font-size: 1.5rem; }
-        .section-title { font-weight: bold; margin: 20px 0 10px; display: block; color: #666; }
+        h2 { margin-top: 0; color: #333; font-size: 1.5rem; text-align: center; }
+        .section-title { font-weight: bold; margin: 25px 0 10px; display: block; color: #666; font-size: 1rem; }
         
         .grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
         .option-btn {
             padding: 12px; border: 2px solid #eee; border-radius: 12px;
             background: white; cursor: pointer; text-align: center; font-weight: 500;
+            display: flex; align-items: center; justify-content: center; font-size: 1rem;
         }
-        .option-btn.selected { border-color: var(--primary); background: #eef6ff; color: var(--primary); }
+        .option-btn.selected { border-color: var(--primary); background: #eef6ff; color: var(--primary); font-weight: bold; }
         
         #close-btn {
             width: 100%; padding: 15px; background: var(--primary); color: white;
-            border: none; border-radius: 12px; font-size: 1.1rem; margin-top: 30px; cursor: pointer;
+            border: none; border-radius: 12px; font-size: 1.1rem; margin-top: 30px; cursor: pointer; font-weight: bold;
         }
     </style>
 </head>
@@ -69,32 +71,33 @@
     <div class="overlay" id="overlay"></div>
 
     <div id="settings-panel">
-        <h2>遊戲設定</h2>
+        <h2>🔧 遊戲設定</h2>
         
-        <span class="section-title">1. 背景</span>
+        <span class="section-title">1. 選擇背景圖片</span>
         <div class="grid">
-            <div class="option-btn selected" onclick="updateBg('HK.jpg', this)">香港街道</div>
-            <div class="option-btn" onclick="updateBg('MTR2.jpg', this)">港鐵站</div>
-            <div class="option-btn" onclick="updateBg('white', this)">純白</div>
-            <div class="option-btn" onclick="updateBg('black', this)">純黑</div>
+            <div class="option-btn selected" data-type="bg" data-value="HK.jpg">香港街道</div>
+            <div class="option-btn" data-type="bg" data-value="MTR2.jpg">港鐵站</div>
+            <div class="option-btn" data-type="bg" data-value="white">純白背景</div>
+            <div class="option-btn" data-type="bg" data-value="black">純黑背景</div>
         </div>
 
-        <span class="section-title">2. 目標物</span>
+        <span class="section-title">2. 選擇目標物</span>
         <div class="grid">
-            <div class="option-btn selected" onclick="updateObj('banana.jpg', this)">🍌 香蕉</div>
-            <div class="option-btn" onclick="updateObj('mtr.jpg', this)">🚇 港鐵</div>
-            <div class="option-btn" onclick="updateObj('apple.jpg', this)">🍎 蘋果</div>
-            <div class="option-btn" onclick="updateObj('taxi.jpg', this)">🚕 的士</div>
+            <div class="option-btn selected" data-type="obj" data-value="banana.jpg">🍌 香蕉</div>
+            <div class="option-btn" data-type="obj" data-value="mtr.jpg">🚇 港鐵</div>
+            <div class="option-btn" data-type="obj" data-value="apple.jpg">🍎 蘋果</div>
+            <div class="option-btn" data-type="obj" data-value="taxi.jpg">🚕 的士</div>
+            <div class="option-btn" data-type="obj" data-value="minibus.jpg">🚌 小巴</div>
         </div>
 
-        <span class="section-title">3. 大小</span>
+        <span class="section-title">3. 目標物大小 (中)</span>
         <div class="grid">
-            <div class="option-btn" onclick="updateSize(80, this)">小</div>
-            <div class="option-btn selected" onclick="updateSize(200, this)">中</div>
-            <div class="option-btn" onclick="updateSize(400, this)">大</div>
+            <div class="option-btn" data-type="size" data-value="80">小 (80px)</div>
+            <div class="option-btn selected" data-type="size" data-value="200">中 (200px)</div>
+            <div class="option-btn" data-type="size" data-value="400">大 (400px)</div>
         </div>
 
-        <button id="close-btn">確定</button>
+        <button id="close-btn">確定並開始</button>
     </div>
 
     <div id="game-container">
@@ -102,16 +105,20 @@
     </div>
 
     <script>
+        // 遊戲狀態與設定
         let config = { bg: 'HK.jpg', obj: 'banana.jpg', size: 200 };
         const gameObj = document.getElementById('game-object');
         const container = document.getElementById('game-container');
         const panel = document.getElementById('settings-panel');
         const overlay = document.getElementById('overlay');
+        const sectionTitleSize = document.querySelector('.section-title:nth-of-type(3)');
 
+        // 生成目標物
         function spawn() {
             gameObj.src = config.obj;
             gameObj.style.width = config.size + 'px';
             
+            // 計算安全範圍，避免物件跳出螢幕外
             const maxX = window.innerWidth - config.size;
             const maxY = window.innerHeight - config.size;
             
@@ -120,44 +127,8 @@
             gameObj.style.display = 'block';
         }
 
+        // 點擊成功邏輯
         gameObj.onclick = (e) => {
-            e.stopPropagation();
+            e.stopPropagation(); // 防止觸發背景點擊
             document.getElementById('success-sound').play();
-            gameObj.style.display = 'none';
-            setTimeout(spawn, 400);
-        };
-
-        // UI 邏輯
-        document.getElementById('settings-btn').onclick = () => {
-            panel.classList.add('open');
-            overlay.style.display = 'block';
-        };
-
-        document.getElementById('close-btn').onclick = overlay.onclick = () => {
-            panel.classList.remove('open');
-            overlay.style.display = 'none';
-            spawn();
-        };
-
-        function updateBg(bg, el) {
-            config.bg = bg;
-            if(bg === 'white') container.style.background = 'white';
-            else if(bg === 'black') container.style.background = 'black';
-            else container.style.backgroundImage = `url(${bg})`;
-            highlight(el);
-        }
-
-        function updateObj(obj, el) { config.obj = obj; highlight(el); }
-        function updateSize(s, el) { config.size = s; highlight(el); }
-
-        function highlight(el) {
-            el.parentElement.querySelectorAll('.option-btn').forEach(b => b.classList.remove('selected'));
-            el.classList.add('selected');
-        }
-
-        // 初始化
-        updateBg('HK.jpg', document.querySelector('.option-btn'));
-        spawn();
-    </script>
-</body>
-</html>
+            game
