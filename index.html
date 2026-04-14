@@ -2,122 +2,78 @@
 <html lang="zh-Hant">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>視覺搜尋遊戲 - 終極眼動版</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>視覺搜尋 - 眼神偵測修復版</title>
     <script src="https://webgazer.cs.brown.edu/webgazer.js"></script>
     <style>
-        body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background-color: #000; font-family: sans-serif; }
-        #game-container { position: relative; width: 100vw; height: 100vh; background-color: #000; background-size: cover; }
-        #game-object { position: absolute; cursor: pointer; display: none; object-fit: contain; z-index: 10; filter: drop-shadow(0 0 10px white); }
-        #settings-btn { position: absolute; top: 20px; left: 20px; width: 60px; height: 60px; background: white; border-radius: 15px; font-size: 30px; display: flex; justify-content: center; align-items: center; cursor: pointer; z-index: 999; }
-        #settings-panel { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #fff; z-index: 10001; padding: 20px; box-sizing: border-box; display: none; overflow-y: auto; }
-        
-        /* 終極紅點：帶發光效果 */
-        #eye-dot {
-            position: fixed; width: 35px; height: 35px;
-            background: rgba(255, 0, 0, 0.8); border: 3px solid white;
-            border-radius: 50%; pointer-events: none;
-            z-index: 20000; display: none;
-            box-shadow: 0 0 20px rgba(255, 0, 0, 0.8);
-            transform: translate(-50%, -50%);
-            transition: width 0.1s, height 0.1s;
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; background: white; overflow: hidden; }
+        #game-object {
+            position: absolute; width: 200px; display: none; z-index: 5;
+            transition: transform 0.1s; cursor: pointer;
         }
-
-        /* 校準輔助點 */
-        .calib-point {
-            position: fixed; width: 40px; height: 40px; background: #ffeb3b;
-            border: 4px solid #f57f17; border-radius: 50%; z-index: 10002;
-            cursor: pointer; display: none;
+        #setup-screen {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(255,255,255,0.9); z-index: 100;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
         }
-        .obj-btn { padding: 15px; background: #2196f3; color: white; border: none; border-radius: 10px; cursor: pointer; width: 100%; margin-bottom: 10px; font-size: 1.2rem; }
+        button { padding: 20px 40px; font-size: 24px; cursor: pointer; background: #28a745; color: white; border: none; border-radius: 10px; }
     </style>
 </head>
 <body>
-    <audio id="success-sound" src="cheer.mp3"></audio>
-    <div id="eye-dot"></div>
-    
-    <div class="calib-point" id="pt1" style="top: 10%; left: 10%;"></div>
-    <div class="calib-point" id="pt2" style="top: 10%; right: 10%;"></div>
-    <div class="calib-point" id="pt3" style="top: 50%; left: 50%;"></div>
-    <div class="calib-point" id="pt4" style="bottom: 10%; left: 10%;"></div>
-    <div class="calib-point" id="pt5" style="bottom: 10%; right: 10%;"></div>
 
-    <div id="game-container">
-        <img id="game-object" src="">
-        <div id="settings-btn">⚙️</div>
+    <div id="setup-screen">
+        <h1>👁️ 眼動功能修復測試</h1>
+        <p>點擊下方按鈕後，請觀察是否有「小綠點」或「小紅點」出現。</p>
+        <button id="start-btn">1. 開啟鏡頭並顯示偵測點</button>
+        <button id="play-btn" style="margin-top:20px; background:#007bff; display:none;">2. 看到點了，開始遊戲</button>
     </div>
 
-    <div id="settings-panel">
-        <h2 style="text-align:center;">👁️ 眼動功能診斷</h2>
-        <div style="background: #e3f2fd; padding: 15px; border-radius: 10px; margin-bottom: 20px;">
-            <button id="start-eye" class="obj-btn">1. 啟動攝影機與紅點</button>
-            <button id="show-calib" class="obj-btn" style="background:#ff9800; display:none;">2. 顯示校準點 (提高準確度)</button>
-        </div>
-        <p id="msg" style="color:blue; text-align:center; font-weight:bold;"></p>
-        <button id="close-settings" class="obj-btn" style="background: #4caf50;">3. 完成並開始遊戲</button>
-    </div>
+    <img id="game-object" src="banana.jpg">
 
     <script>
-        const dot = document.getElementById('eye-dot');
         const gameObj = document.getElementById('game-object');
-        const msg = document.getElementById('msg');
+        const startBtn = document.getElementById('start-btn');
+        const playBtn = document.getElementById('play-btn');
+        const setupScreen = document.getElementById('setup-screen');
 
-        function spawn() {
-            gameObj.src = 'banana.jpg';
-            gameObj.style.width = '200px';
+        function moveBanana() {
             gameObj.style.left = Math.random() * (window.innerWidth - 200) + 'px';
             gameObj.style.top = Math.random() * (window.innerHeight - 200) + 'px';
             gameObj.style.display = 'block';
         }
 
-        document.getElementById('start-eye').onclick = function() {
-            msg.innerText = "正在喚醒紅點...";
+        startBtn.onclick = function() {
+            startBtn.innerText = "正在啟動...";
+            
+            // 強制開啟 WebGazer 原生紅點
             webgazer.setGazeListener((data, elapsed) => {
-                if (data) {
-                    dot.style.display = 'block';
-                    dot.style.left = data.x + 'px';
-                    dot.style.top = data.y + 'px';
+                if (data == null) return;
 
-                    // 遊戲判定
-                    const rect = gameObj.getBoundingClientRect();
-                    if (data.x >= rect.left && data.x <= rect.right && data.y >= rect.top && data.y <= rect.bottom) {
-                        if(gameObj.style.display !== 'none') {
-                            document.getElementById('success-sound').play();
-                            gameObj.style.display = 'none';
-                            setTimeout(spawn, 500);
-                        }
-                    }
+                // 眼神碰撞偵測
+                const rect = gameObj.getBoundingClientRect();
+                if (data.x >= rect.left && data.x <= rect.right && data.y >= rect.top && data.y <= rect.bottom) {
+                    gameObj.style.display = 'none';
+                    setTimeout(moveBanana, 500);
                 }
             }).begin();
-            webgazer.showVideoPreview(true).showPredictionPoints(false);
-            document.getElementById('show-calib').style.display = 'block';
-            msg.innerText = "紅點已啟用！如果看不到，請嘗試縮小瀏覽器視窗再放大。";
+
+            // 關鍵：強制顯示原生的預測點 (通常是綠色或紅色小點)
+            webgazer.showPredictionPoints(true); 
+            webgazer.showVideoPreview(true);
+
+            startBtn.style.display = 'none';
+            playBtn.style.display = 'block';
         };
 
-        // 顯示校準點邏輯
-        document.getElementById('show-calib').onclick = () => {
-            document.querySelectorAll('.calib-point').forEach(p => p.style.display = 'block');
-            msg.innerText = "請盯着黃色圓點並點擊它們，每個點點擊 3 次。";
+        playBtn.onclick = function() {
+            setupScreen.style.display = 'none';
+            moveBanana();
         };
 
-        // 點擊校準點後自動消失
-        document.querySelectorAll('.calib-point').forEach(p => {
-            let count = 0;
-            p.onclick = () => {
-                count++;
-                p.style.opacity = 1 - (count * 0.3);
-                if(count >= 3) p.style.display = 'none';
-            };
-        });
-
-        document.getElementById('settings-btn').onclick = () => document.getElementById('settings-panel').style.display = 'block';
-        document.getElementById('close-settings').onclick = () => {
-            document.getElementById('settings-panel').style.display = 'none';
-            document.querySelectorAll('.calib-point').forEach(p => p.style.display = 'none');
-            spawn();
+        // 防止網頁自動進入睡眠
+        window.onbeforeunload = function() {
+            webgazer.end();
         };
-
-        spawn();
     </script>
 </body>
 </html>
