@@ -50,7 +50,7 @@
     <div id="settings-panel">
         <h2 style="text-align: center;">⚙️ 遊戲設定</h2>
         <div class="setting-group">
-            <span class="setting-label">1. 選擇背景圖片</span>
+            <span class="setting-label">1. 選擇背景圖片 (純色在最後面)</span>
             <div class="bg-options">
                 <img src="HK.jpg" class="bg-option selected" data-bg="HK.jpg">
                 <img src="MTR2.jpg" class="bg-option" data-bg="MTR2.jpg">
@@ -81,10 +81,7 @@
     </div>
     <script>
         const state = { bg: 'HK.jpg', obj: 'banana.jpg', size: 'medium' };
-        
-        // 更新後的尺寸設定：80px, 200px, 450px
-        const sizes = { small: 80, medium: 200, large: 450 };
-
+        const sizes = { small: 100, medium: 230, large: 450 };
         const gameObj = document.getElementById('game-object');
         const container = document.getElementById('game-container');
 
@@ -92,8 +89,6 @@
             gameObj.src = state.obj;
             const s = sizes[state.size];
             gameObj.style.width = s + 'px';
-            
-            // 隨機坐標
             const maxX = window.innerWidth - s;
             const maxY = window.innerHeight - s;
             gameObj.style.left = Math.random() * maxX + 'px';
@@ -108,13 +103,11 @@
         };
 
         document.getElementById('settings-btn').onclick = () => document.getElementById('settings-panel').style.display = 'block';
-        
         document.getElementById('close-settings').onclick = () => {
             document.getElementById('settings-panel').style.display = 'none';
             spawn();
         };
 
-        // 背景選擇
         document.querySelectorAll('.bg-option').forEach(el => {
             el.onclick = () => {
                 document.querySelectorAll('.bg-option').forEach(b => b.classList.remove('selected'));
@@ -126,7 +119,6 @@
             };
         });
 
-        // 物件選擇
         document.querySelectorAll('.obj-btn').forEach(el => {
             el.onclick = () => {
                 document.querySelectorAll('.obj-btn').forEach(b => b.classList.remove('selected'));
@@ -135,7 +127,6 @@
             };
         });
 
-        // 大小選擇
         document.querySelectorAll('.size-btn').forEach(el => {
             el.onclick = () => {
                 document.querySelectorAll('.size-btn').forEach(b => b.classList.remove('selected'));
