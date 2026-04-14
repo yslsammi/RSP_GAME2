@@ -363,9 +363,9 @@
                 <div class="obj-options">
                     <button class="obj-btn" data-obj="apple.jpg">🍎 蘋果</button>
                     <button class="obj-btn selected" data-obj="banana.jpg">🍌 香蕉</button>
-                    <button class="obj-btn" data-obj="MTR.jpg">🚇 港鐵</button>
-                    <button class="obj-btn" data-obj="taxi.png">🚕 的士</button>
-                    <button class="obj-btn" data-obj="minibus.png">🚌 小巴</button>
+                    <button class="obj-btn" data-obj="mtr.jpg">🚇 港鐵</button>
+                    <button class="obj-btn" data-obj="taxi.jpg">🚕 的士</button>
+                    <button class="obj-btn" data-obj="minibus.jpg">🚌 小巴</button>
                 </div>
             </div>
 
@@ -394,7 +394,7 @@
         const gameState = {
             mode: '1', 
             background: 'HK.jpg',
-            object: 'apple.jpg', // 預設目標物
+            object: 'banana.jpg', // 預設目標物
             dimLevel: 0,
             size: 'medium'
         };
@@ -424,21 +424,18 @@
 
         function spawnObject() {
             const sizePx = sizes[gameState.size];
-            
-            // 設定所選目標物的圖片路徑
             gameObject.src = gameState.object;
             
             gameObject.style.width = sizePx + 'px';
             gameObject.style.height = 'auto'; 
             gameObject.style.display = 'block';
 
-            // 半隱藏模式設定：降低透明度
             if (gameState.mode === '2') {
                 gameObject.style.opacity = '0.4';
-                gameObject.style.filter = 'drop-shadow(0 0 5px rgba(255,255,255,0.5))'; // 減弱發光
+                gameObject.style.filter = 'drop-shadow(0 0 5px rgba(255,255,255,0.5))';
             } else {
                 gameObject.style.opacity = '1';
-                gameObject.style.filter = 'drop-shadow(0 0 10px rgba(255,255,255,0.9))'; // 加強發光
+                gameObject.style.filter = 'drop-shadow(0 0 10px rgba(255,255,255,0.9))';
             }
 
             const maxX = window.innerWidth - sizePx;
@@ -447,7 +444,6 @@
             let randomX = Math.random() * maxX;
             let randomY = Math.random() * maxY;
 
-            // 避開左上角按鈕
             if (randomX < 120 && randomY < 120) {
                 randomX += 140;
                 randomY += 140;
@@ -458,41 +454,21 @@
         }
 
         gameObject.addEventListener('click', function() {
-            // 點擊回饋：瞬間發光與放大
             this.style.filter = "brightness(2) contrast(1.5) drop-shadow(0 0 20px white)";
             this.style.transform = "scale(1.2)";
             setTimeout(() => { playWinSequence(); }, 100);
         });
 
         function playWinSequence() {
-            // 語音回饋 (如果支援)
-            if ('speechSynthesis' in window) {
-                const synth = window.speechSynthesis;
-                synth.cancel(); // 停止之前的語音
-                const objName = document.querySelector(`.obj-btn[data-obj="${gameState.object}"]`).textContent;
-                const utter = new SpeechSynthesisUtterance(`找到了${objName}`);
-                utter.lang = 'zh-HK';
-                utter.rate = 1.0;
-                utter.pitch = 1.0;
-                utter.volume = 1.0;
-                // synth.speak(utter); // 視需求開啟語音提示
-            }
-
-            // 音效回饋
             try { 
                 audio.currentTime = 0;
                 audio.play(); 
-            } catch(e) { console.log("音效播放失敗", e); }
+            } catch(e) { console.log("音效失敗", e); }
 
-            // 設定勝利畫面的目標物圖片
             winImgBack.src = gameState.object;
-
             winOverlay.classList.add('active');
-
-            // 復原遊戲物件樣式
             gameObject.style.transform = "scale(1)";
 
-            // 3秒後自動重置
             setTimeout(() => { resetGame(); }, 3000); 
         }
 
@@ -501,23 +477,19 @@
             spawnObject(); 
         }
 
-        // --- 設定面板邏輯 ---
-
         settingsBtn.addEventListener('click', () => {
             settingsPanel.style.display = 'block';
         });
 
         closeSettingsBtn.addEventListener('click', () => {
             settingsPanel.style.display = 'none';
-            spawnObject(); // 完成設定後重新放置物件
+            spawnObject(); 
         });
 
-        // 監聽模式選擇
         document.querySelectorAll('input[name="mode"]').forEach(radio => {
             radio.addEventListener('change', (e) => { gameState.mode = e.target.value; });
         });
 
-        // 監聽背景選擇
         document.querySelectorAll('.bg-option').forEach(img => {
             img.addEventListener('click', (e) => {
                 document.querySelectorAll('.bg-option').forEach(i => i.classList.remove('selected'));
@@ -527,7 +499,6 @@
             });
         });
 
-        // 監聽目標物選擇 (新加入)
         document.querySelectorAll('.obj-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 document.querySelectorAll('.obj-btn').forEach(b => b.classList.remove('selected'));
@@ -536,14 +507,12 @@
             });
         });
 
-        // 監聽背景變暗滑桿
         dimSlider.addEventListener('input', (e) => {
             gameState.dimLevel = e.target.value;
             dimValueText.textContent = gameState.dimLevel + '%';
             applySettings();
         });
 
-        // 監聽物件大小選擇
         document.querySelectorAll('.size-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 document.querySelectorAll('.size-btn').forEach(b => b.classList.remove('selected'));
@@ -557,16 +526,13 @@
             dimOverlay.style.opacity = gameState.dimLevel / 100;
         }
 
-        // 監聽視窗大小變化，重新放置物件
         window.addEventListener('resize', () => {
             if (settingsPanel.style.display !== 'block') {
                 spawnObject();
             }
         });
 
-        // 初始化遊戲
         init();
-
     </script>
 </body>
 </html>
