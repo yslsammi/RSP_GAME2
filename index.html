@@ -3,50 +3,64 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>視覺搜尋遊戲 - 比例修正版</title>
+    <title>視覺搜尋遊戲 - 專業訓練版</title>
     <style>
         :root { 
-            --primary: #007AFF; --success: #28a745; --gaze: #ffeb3b; 
+            --primary: #007AFF; --success: #28a745; --danger: #dc3545; --gaze: #ffeb3b; 
+            --card-white: #ffffff;
         }
+        * { -webkit-touch-callout: none; -webkit-user-select: none; touch-action: none; box-sizing: border-box; }
         body, html {
             margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden;
             font-family: -apple-system, "Microsoft JhengHei", sans-serif;
-            background-color: #000; -webkit-user-select: none; user-select: none;
+            background-color: #000;
         }
         
-        #game-container {
+        /* 基礎場景 */
+        #scene-wrapper {
             position: relative; width: 100vw; height: 100vh;
-            /* 背景比例修正：cover 確保填滿但不拉伸 */
-            background-size: cover; 
-            background-position: center; 
-            background-repeat: no-repeat;
-            background-color: #000; 
-            transition: background 0.5s;
+            background-color: white; /* 預設純白背景 */
+            overflow: hidden;
+        }
+
+        /* 背景層：獨立出來以便應用虛化濾鏡 */
+        #background-layer {
+            position: absolute; inset: 0;
+            background-size: cover; background-position: center; background-repeat: no-repeat;
+            transition: filter 0.3s ease; /* 虛化過渡動畫 */
+            z-index: 1;
         }
 
         /* 目標物容器 */
         #object-container {
             position: absolute; display: none; z-index: 10;
-            cursor: none; transition: transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+            cursor: none; 
+            background: white; /* 強制白底以保持高對比 */
+            border-radius: 20px;
+            /* 新增：醒目的外框提示 */
+            border: 6px solid #000; 
+            padding: 10px;
+            box-shadow: 0 0 30px rgba(0,0,0,0.6);
+            transition: transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
         }
         
         #game-object {
             display: block;
             width: 100%; 
-            height: auto; /* 關鍵修正：高度自動，保持原始比例 */
+            height: auto; /* 保持原始比例 */
             object-fit: contain;
-            filter: drop-shadow(0 0 15px rgba(255,255,255,0.8));
+            pointer-events: none;
         }
 
         .progress-bar {
-            position: absolute; bottom: -20px; left: 0; width: 0%; height: 12px;
-            background: var(--gaze); border-radius: 6px; box-shadow: 0 0 15px var(--gaze);
+            position: absolute; bottom: -20px; left: 10px; right: 10px; width: auto; height: 14px;
+            background: var(--gaze); border-radius: 7px; box-shadow: 0 0 15px var(--gaze);
         }
 
-        /* 設定面板樣式 (維持黑底高對比) */
+        /* 設定面板 (黑底) */
         #settings-btn {
             position: absolute; top: 20px; left: 20px; width: 60px; height: 60px;
-            background: rgba(255,255,255,0.2); border-radius: 15px; border: 2px solid #fff;
+            background: rgba(255,255,255,0.4); border-radius: 15px; border: 2px solid #fff;
             font-size: 30px; display: flex; justify-content: center; align-items: center;
             cursor: pointer; z-index: 999; color: white;
         }
@@ -54,32 +68,44 @@
             position: fixed; inset: 0; background: #1a1a1a; z-index: 1001; 
             padding: 30px; display: none; overflow-y: auto; color: white;
         }
-        .setting-group { margin-bottom: 25px; background: #2a2a2a; padding: 20px; border-radius: 20px; }
+        .setting-item { margin-bottom: 25px; background: #2a2a2a; padding: 20px; border-radius: 20px; }
         .setting-label { font-weight: bold; font-size: 1.5rem; display: block; margin-bottom: 15px; }
-        .bg-options { display: flex; gap: 12px; flex-wrap: wrap; }
+        .setting-label span { font-size: 1rem; font-weight: normal; color: #aaa; margin-left: 10px; }
+        
+        .bg-options, .obj-options, .size-options { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; }
+        
         .bg-option { width: 120px; height: 80px; border: 4px solid #444; border-radius: 12px; cursor: pointer; object-fit: cover; }
+        .bg-option.color-option { background: white; border-color: #555; } /* 純白按鈕 */
+        
         .obj-btn, .size-btn { padding: 15px 25px; background: #333; border: 3px solid #444; border-radius: 12px; cursor: pointer; color: white; font-size: 1.1rem; }
-        .selected { border-color: var(--primary) !important; background: var(--primary) !important; }
+        .selected { border-color: var(--primary) !important; background: var(--primary) !important; font-weight: bold; }
+        
+        /* 虛化滑桿樣式 */
+        .blur-slider { width: 100%; height: 30px; cursor: pointer; }
+
         #close-settings { width: 100%; padding: 20px; background: var(--success); color: white; font-size: 1.6rem; border: none; border-radius: 15px; cursor: pointer; font-weight: bold; }
 
-        /* 答對特效修正：使用 transform 代替改變 left/top 確保比例不閃爍 */
+        /* 答對特效 */
         .correct-center {
             left: 50% !important; top: 50% !important;
-            transform: translate(-50%, -50%) scale(1.8) !important;
+            transform: translate(-50%, -50%) scale(1.6) !important;
             z-index: 2000 !important;
+            border-color: var(--success) !important;
         }
+        .match-card.fade-out { opacity: 0; transform: scale(0.5); pointer-events: none; }
 
         #next-btn {
             display: none; position: fixed; bottom: 10%; left: 50%; transform: translateX(-50%);
-            padding: 20px 60px; font-size: 2.2rem; background: var(--success); color: white;
-            border: 2px solid white; border-radius: 50px; cursor: pointer; z-index: 3000;
+            padding: 20px 60px; font-size: 2.5rem; background: var(--success); color: white;
+            border: 3px solid white; border-radius: 50px; cursor: pointer; z-index: 3000;
         }
     </style>
 </head>
 <body>
     <audio id="success-sound" src="cheer.mp3"></audio>
     
-    <div id="game-container">
+    <div id="scene-wrapper">
+        <div id="background-layer"></div>
         <div id="object-container">
             <img id="game-object" src="">
             <div class="progress-bar" id="gaze-bar"></div>
@@ -88,18 +114,25 @@
     </div>
 
     <div id="settings-panel">
-        <h1 style="text-align: center;">⚙️ 視覺搜尋遊戲設定</h1>
-        <div class="setting-group">
+        <h1 style="text-align: center;">⚙️ 遊戲訓練設定</h1>
+        
+        <div class="setting-item">
             <span class="setting-label">1. 背景場景</span>
             <div class="bg-options">
-                <img src="HK.jpg" class="bg-option selected" data-bg="HK.jpg">
-                <img src="MTR2.jpg" class="bg-option" data-bg="MTR2.jpg">
-                <img src="supermarket.jpg" class="bg-option" data-bg="supermarket.jpg">
-                <div class="bg-option" data-bg="black" style="background:black; border:2px solid white;"></div>
+                <img src="HK.jpg" class="bg-option selected" data-type="img" data-bg="HK.jpg">
+                <img src="MTR2.jpg" class="bg-option" data-type="img" data-bg="MTR2.jpg">
+                <img src="supermarket.jpg" class="bg-option" data-type="img" data-bg="supermarket.jpg">
+                <div class="bg-option color-optionselected" data-type="color" data-bg="white">純白</div>
             </div>
         </div>
-        <div class="setting-group">
-            <span class="setting-label">2. 搜尋目標</span>
+
+        <div class="setting-item">
+            <span class="setting-label">2. 背景虛化程度 (模糊)</span>
+            <input type="range" min="0" max="15" value="0" class="blur-slider" id="blur-control">
+        </div>
+
+        <div class="setting-item">
+            <span class="setting-label">3. 搜尋目標</span>
             <div class="obj-options">
                 <button class="obj-btn selected" data-obj="banana.jpg">🍌 香蕉</button>
                 <button class="obj-btn" data-obj="apple.jpg">🍎 蘋果</button>
@@ -107,24 +140,27 @@
                 <button class="obj-btn" data-obj="taxi.jpg">🚕 的士</button>
             </div>
         </div>
-        <div class="setting-group">
-            <span class="setting-label">3. 目標大小</span>
+
+        <div class="setting-item">
+            <span class="setting-label">4. 目標大小 (同一比例縮放)</span>
             <div class="size-options">
-                <button class="size-btn" data-size="small">小</button>
-                <button class="size-btn selected" data-size="medium">中</button>
-                <button class="size-btn" data-size="large">大</button>
+                <button class="size-btn" data-size="small">大 (容易)</button>
+                <button class="size-btn selected" data-size="medium">中 (標準)</button>
+                <button class="size-btn" data-size="large">小 (困難)</button>
             </div>
         </div>
-        <button id="close-settings">✅ 開始</button>
+
+        <button id="close-settings">✅ 確定並開始</button>
     </div>
 
     <button id="next-btn" onclick="triggerNext()">下一題 ➔</button>
 
     <script>
-        const state = { bg: 'HK.jpg', obj: 'banana.jpg', size: 'medium', dwell: 1000 };
-        const sizes = { small: 120, medium: 220, large: 400 };
+        // 大小設定：固定寬度，高度自動，保持比例
+        const state = { bg: 'white', bgType: 'color', blur: 0, obj: 'banana.jpg', size: 'medium', dwell: 1000 };
+        const sizes = { small: 450, medium: 250, large: 130 }; // 大、中、小 的對應寬度
         
-        const container = document.getElementById('game-container');
+        const backgroundLayer = document.getElementById('background-layer');
         const objContainer = document.getElementById('object-container');
         const gameObj = document.getElementById('game-object');
         const gazeBar = document.getElementById('gaze-bar');
@@ -134,6 +170,17 @@
         let autoNextTimeout = null;
         let isTransitioning = false;
 
+        function updateBackground() {
+            if (state.bgType === 'color') {
+                backgroundLayer.style.backgroundImage = 'none';
+                backgroundLayer.style.backgroundColor = state.bg;
+                backgroundLayer.style.filter = 'none'; // 純色背景不需要模糊
+            } else {
+                backgroundLayer.style.backgroundImage = `url(${state.bg})`;
+                backgroundLayer.style.filter = `blur(${state.blur}px)`;
+            }
+        }
+
         function spawn() {
             isTransitioning = false;
             nextBtn.style.display = 'none';
@@ -141,16 +188,18 @@
             objContainer.style.transform = 'none';
             gazeBar.style.width = '0%';
             
+            updateBackground(); // 每次生成題目都更新背景與模糊度
+
             gameObj.src = state.obj;
             const targetWidth = sizes[state.size];
             
-            // 確保圖片載入後再計算位置，避免閃爍
+            // 確保圖片載入後再計算，保持比例
             gameObj.onload = () => {
                 objContainer.style.width = targetWidth + 'px';
-                // 高度會由 img 的 height: auto 自動決定，保持比例
+                // 高度 auto 會自動保持比例，加上外框與 padding
                 
                 const maxX = window.innerWidth - targetWidth - 100;
-                const maxY = window.innerHeight - (targetWidth * 0.8) - 100; // 粗略估計高度
+                const maxY = window.innerHeight - targetWidth - 100; // 粗略估計高度
                 
                 objContainer.style.left = (Math.random() * maxX + 50) + 'px';
                 objContainer.style.top = (Math.random() * maxY + 50) + 'px';
@@ -158,6 +207,7 @@
             };
         }
 
+        // 眼動掃視邏輯
         const startGaze = () => {
             if (isTransitioning) return;
             gazeBar.style.transition = `width ${state.dwell}ms linear`;
@@ -194,22 +244,45 @@
             spawn();
         };
 
-        // UI 邏輯切換 (省略重複的部分，邏輯與之前一致)
-        document.querySelectorAll('.bg-option, .obj-btn, .size-btn').forEach(el => {
+        // 背景切換邏輯
+        document.querySelectorAll('.bg-option').forEach(el => {
             el.addEventListener('click', function() {
-                const group = this.parentElement.querySelectorAll('*');
-                group.forEach(b => b.classList.remove('selected'));
+                document.querySelectorAll('.bg-option').forEach(b => b.classList.remove('selected'));
                 this.classList.add('selected');
-                
-                if(this.dataset.bg) {
-                    state.bg = this.dataset.bg;
-                    container.style.backgroundImage = (state.bg==='black') ? 'none' : `url(${state.bg})`;
-                }
-                if(this.dataset.obj) state.obj = this.dataset.obj;
-                if(this.dataset.size) state.size = this.dataset.size;
+                state.bgType = this.dataset.type;
+                state.bg = this.dataset.bg;
+                updateBackground(); // 即時預覽背景
             });
         });
 
+        // 虛化滑桿邏輯
+        document.getElementById('blur-control').addEventListener('input', function() {
+            state.blur = this.value;
+            if (state.bgType === 'img') {
+                updateBackground(); // 即時預覽虛化效果
+            }
+        });
+
+        // 目標物切換
+        document.querySelectorAll('.obj-btn').forEach(el => {
+            el.onclick = () => {
+                document.querySelectorAll('.obj-btn').forEach(b => b.classList.remove('selected'));
+                el.classList.add('selected');
+                state.obj = el.dataset.obj;
+            };
+        });
+
+        // 大小切換
+        document.querySelectorAll('.size-btn').forEach(el => {
+            el.onclick = () => {
+                document.querySelectorAll('.size-btn').forEach(b => b.classList.remove('selected'));
+                el.classList.add('selected');
+                state.size = el.dataset.size;
+            };
+        });
+
+        // 初始化
+        updateBackground();
         spawn();
     </script>
 </body>
