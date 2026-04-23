@@ -3,160 +3,211 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>視覺搜尋遊戲 - 香港版</title>
+    <title>視覺搜尋遊戲 - 比例修正版</title>
     <style>
+        :root { 
+            --primary: #007AFF; --success: #28a745; --gaze: #ffeb3b; 
+        }
         body, html {
             margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden;
-            font-family: "Arial", "Microsoft JhengHei", sans-serif;
+            font-family: -apple-system, "Microsoft JhengHei", sans-serif;
             background-color: #000; -webkit-user-select: none; user-select: none;
         }
+        
         #game-container {
             position: relative; width: 100vw; height: 100vh;
-            background-size: cover; background-position: center; transition: all 0.3s;
-            background-color: #333;
+            /* 背景比例修正：cover 確保填滿但不拉伸 */
+            background-size: cover; 
+            background-position: center; 
+            background-repeat: no-repeat;
+            background-color: #000; 
+            transition: background 0.5s;
         }
+
+        /* 目標物容器 */
+        #object-container {
+            position: absolute; display: none; z-index: 10;
+            cursor: none; transition: transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        
         #game-object {
-            position: absolute; cursor: pointer; z-index: 10;
-            display: none; object-fit: contain; 
-            filter: drop-shadow(0 0 10px rgba(255,255,255,0.8));
+            display: block;
+            width: 100%; 
+            height: auto; /* 關鍵修正：高度自動，保持原始比例 */
+            object-fit: contain;
+            filter: drop-shadow(0 0 15px rgba(255,255,255,0.8));
         }
+
+        .progress-bar {
+            position: absolute; bottom: -20px; left: 0; width: 0%; height: 12px;
+            background: var(--gaze); border-radius: 6px; box-shadow: 0 0 15px var(--gaze);
+        }
+
+        /* 設定面板樣式 (維持黑底高對比) */
         #settings-btn {
             position: absolute; top: 20px; left: 20px; width: 60px; height: 60px;
-            background: white; border-radius: 15px; border: 4px solid #333;
+            background: rgba(255,255,255,0.2); border-radius: 15px; border: 2px solid #fff;
             font-size: 30px; display: flex; justify-content: center; align-items: center;
-            cursor: pointer; z-index: 999;
+            cursor: pointer; z-index: 999; color: white;
         }
         #settings-panel {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: #fff; z-index: 1001; padding: 20px; box-sizing: border-box;
-            display: none; overflow-y: auto;
+            position: fixed; inset: 0; background: #1a1a1a; z-index: 1001; 
+            padding: 30px; display: none; overflow-y: auto; color: white;
         }
-        .setting-group { margin-bottom: 25px; background: #f0f0f0; padding: 15px; border-radius: 20px; }
-        .setting-label { font-weight: bold; font-size: 1.5rem; display: block; margin-bottom: 12px; }
-        .bg-options, .obj-options, .size-options { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; }
-        .bg-option { width: 100px; height: 70px; border: 4px solid #ccc; border-radius: 12px; cursor: pointer; object-fit: cover; }
-        .color-option { display: flex; align-items: center; justify-content: center; font-weight: bold; border: 4px solid #ccc; }
-        .obj-btn, .size-btn { padding: 12px 20px; background: white; border: 3px solid #ccc; border-radius: 12px; cursor: pointer; font-weight: bold; font-size: 1.1rem; }
-        .selected { border-color: #007AFF !important; background: #e7f3ff !important; }
-        #close-settings { width: 100%; padding: 20px; background: #28a745; color: white; font-size: 1.6rem; border: none; border-radius: 15px; cursor: pointer; margin-top: 20px; font-weight: bold; }
+        .setting-group { margin-bottom: 25px; background: #2a2a2a; padding: 20px; border-radius: 20px; }
+        .setting-label { font-weight: bold; font-size: 1.5rem; display: block; margin-bottom: 15px; }
+        .bg-options { display: flex; gap: 12px; flex-wrap: wrap; }
+        .bg-option { width: 120px; height: 80px; border: 4px solid #444; border-radius: 12px; cursor: pointer; object-fit: cover; }
+        .obj-btn, .size-btn { padding: 15px 25px; background: #333; border: 3px solid #444; border-radius: 12px; cursor: pointer; color: white; font-size: 1.1rem; }
+        .selected { border-color: var(--primary) !important; background: var(--primary) !important; }
+        #close-settings { width: 100%; padding: 20px; background: var(--success); color: white; font-size: 1.6rem; border: none; border-radius: 15px; cursor: pointer; font-weight: bold; }
+
+        /* 答對特效修正：使用 transform 代替改變 left/top 確保比例不閃爍 */
+        .correct-center {
+            left: 50% !important; top: 50% !important;
+            transform: translate(-50%, -50%) scale(1.8) !important;
+            z-index: 2000 !important;
+        }
+
+        #next-btn {
+            display: none; position: fixed; bottom: 10%; left: 50%; transform: translateX(-50%);
+            padding: 20px 60px; font-size: 2.2rem; background: var(--success); color: white;
+            border: 2px solid white; border-radius: 50px; cursor: pointer; z-index: 3000;
+        }
     </style>
 </head>
 <body>
     <audio id="success-sound" src="cheer.mp3"></audio>
+    
     <div id="game-container">
-        <img id="game-object" src="">
+        <div id="object-container">
+            <img id="game-object" src="">
+            <div class="progress-bar" id="gaze-bar"></div>
+        </div>
         <div id="settings-btn">⚙️</div>
     </div>
 
     <div id="settings-panel">
-        <h2 style="text-align: center;">⚙️ 遊戲設定</h2>
-        
+        <h1 style="text-align: center;">⚙️ 視覺搜尋遊戲設定</h1>
         <div class="setting-group">
-            <span class="setting-label">1. 選擇背景</span>
+            <span class="setting-label">1. 背景場景</span>
             <div class="bg-options">
                 <img src="HK.jpg" class="bg-option selected" data-bg="HK.jpg">
                 <img src="MTR2.jpg" class="bg-option" data-bg="MTR2.jpg">
                 <img src="supermarket.jpg" class="bg-option" data-bg="supermarket.jpg">
-                <div class="bg-option color-option" data-bg="white" style="background:white; color:black;">純白</div>
-                <div class="bg-option color-option" data-bg="black" style="background:black; color:white;">純黑</div>
+                <div class="bg-option" data-bg="black" style="background:black; border:2px solid white;"></div>
             </div>
         </div>
-
         <div class="setting-group">
-            <span class="setting-label">2. 選擇目標物</span>
+            <span class="setting-label">2. 搜尋目標</span>
             <div class="obj-options">
-                <button class="obj-btn" data-obj="apple.jpg">🍎 蘋果</button>
                 <button class="obj-btn selected" data-obj="banana.jpg">🍌 香蕉</button>
+                <button class="obj-btn" data-obj="apple.jpg">🍎 蘋果</button>
                 <button class="obj-btn" data-obj="mtr.jpg">🚇 港鐵</button>
                 <button class="obj-btn" data-obj="taxi.jpg">🚕 的士</button>
-                <button class="obj-btn" data-obj="minibus.jpg">🚌 小巴</button>
             </div>
         </div>
-
         <div class="setting-group">
-            <span class="setting-label">3. 目標物大小</span>
+            <span class="setting-label">3. 目標大小</span>
             <div class="size-options">
                 <button class="size-btn" data-size="small">小</button>
                 <button class="size-btn selected" data-size="medium">中</button>
                 <button class="size-btn" data-size="large">大</button>
             </div>
         </div>
-
-        <button id="close-settings">✅ 確定並開始</button>
+        <button id="close-settings">✅ 開始</button>
     </div>
 
+    <button id="next-btn" onclick="triggerNext()">下一題 ➔</button>
+
     <script>
-        const state = { bg: 'HK.jpg', obj: 'banana.jpg', size: 'medium' };
-        const sizes = { small: 80, medium: 200, large: 450 };
-        const gameObj = document.getElementById('game-object');
+        const state = { bg: 'HK.jpg', obj: 'banana.jpg', size: 'medium', dwell: 1000 };
+        const sizes = { small: 120, medium: 220, large: 400 };
+        
         const container = document.getElementById('game-container');
+        const objContainer = document.getElementById('object-container');
+        const gameObj = document.getElementById('game-object');
+        const gazeBar = document.getElementById('gaze-bar');
+        const nextBtn = document.getElementById('next-btn');
+        
+        let gazeTimer = null;
+        let autoNextTimeout = null;
+        let isTransitioning = false;
 
         function spawn() {
+            isTransitioning = false;
+            nextBtn.style.display = 'none';
+            objContainer.classList.remove('correct-center');
+            objContainer.style.transform = 'none';
+            gazeBar.style.width = '0%';
+            
             gameObj.src = state.obj;
-            const s = sizes[state.size];
-            gameObj.style.width = s + 'px';
+            const targetWidth = sizes[state.size];
             
-            const maxX = window.innerWidth - s;
-            const maxY = window.innerHeight - s;
-            
-            gameObj.style.left = Math.random() * maxX + 'px';
-            gameObj.style.top = Math.random() * maxY + 'px';
-            gameObj.style.display = 'block';
+            // 確保圖片載入後再計算位置，避免閃爍
+            gameObj.onload = () => {
+                objContainer.style.width = targetWidth + 'px';
+                // 高度會由 img 的 height: auto 自動決定，保持比例
+                
+                const maxX = window.innerWidth - targetWidth - 100;
+                const maxY = window.innerHeight - (targetWidth * 0.8) - 100; // 粗略估計高度
+                
+                objContainer.style.left = (Math.random() * maxX + 50) + 'px';
+                objContainer.style.top = (Math.random() * maxY + 50) + 'px';
+                objContainer.style.display = 'block';
+            };
         }
 
-        // 修改這裡：點擊後等待 3 秒 (3000 毫秒)
-        gameObj.onclick = () => {
+        const startGaze = () => {
+            if (isTransitioning) return;
+            gazeBar.style.transition = `width ${state.dwell}ms linear`;
+            gazeBar.style.width = '100%';
+            gazeTimer = setTimeout(success, state.dwell);
+        };
+
+        const stopGaze = () => {
+            if (isTransitioning) return;
+            clearTimeout(gazeTimer);
+            gazeBar.style.transition = 'none';
+            gazeBar.style.width = '0%';
+        };
+
+        function success() {
+            isTransitioning = true;
             document.getElementById('success-sound').play();
-            gameObj.style.display = 'none'; // 點擊後立刻隱藏
-            
-            setTimeout(() => {
-                spawn(); // 3 秒後才出現下一張
-            }, 3000); 
-        };
+            objContainer.classList.add('correct-center');
+            nextBtn.style.display = 'block';
+            autoNextTimeout = setTimeout(() => { if (isTransitioning) spawn(); }, 4000);
+        }
 
-        document.getElementById('settings-btn').onclick = () => {
-            document.getElementById('settings-panel').style.display = 'block';
-        };
+        function triggerNext() {
+            clearTimeout(autoNextTimeout);
+            spawn();
+        }
 
+        objContainer.addEventListener('pointerenter', startGaze);
+        objContainer.addEventListener('pointerleave', stopGaze);
+        
+        document.getElementById('settings-btn').onclick = () => document.getElementById('settings-panel').style.display = 'block';
         document.getElementById('close-settings').onclick = () => {
             document.getElementById('settings-panel').style.display = 'none';
             spawn();
         };
 
-        // 背景切換
-        document.querySelectorAll('.bg-option').forEach(el => {
-            el.onclick = () => {
-                document.querySelectorAll('.bg-option').forEach(b => b.classList.remove('selected'));
-                el.classList.add('selected');
-                state.bg = el.dataset.bg;
-                if(state.bg === 'white') { 
-                    container.style.backgroundImage = 'none'; 
-                    container.style.backgroundColor = 'white'; 
-                } else if(state.bg === 'black') { 
-                    container.style.backgroundImage = 'none'; 
-                    container.style.backgroundColor = 'black'; 
-                } else { 
-                    container.style.backgroundImage = `url(${state.bg})`; 
+        // UI 邏輯切換 (省略重複的部分，邏輯與之前一致)
+        document.querySelectorAll('.bg-option, .obj-btn, .size-btn').forEach(el => {
+            el.addEventListener('click', function() {
+                const group = this.parentElement.querySelectorAll('*');
+                group.forEach(b => b.classList.remove('selected'));
+                this.classList.add('selected');
+                
+                if(this.dataset.bg) {
+                    state.bg = this.dataset.bg;
+                    container.style.backgroundImage = (state.bg==='black') ? 'none' : `url(${state.bg})`;
                 }
-            };
-        });
-
-        // 目標物切換
-        document.querySelectorAll('.obj-btn').forEach(el => {
-            el.onclick = () => {
-                document.querySelectorAll('.obj-btn').forEach(b => b.classList.remove('selected'));
-                el.classList.add('selected');
-                state.obj = el.dataset.obj;
-            };
-        });
-
-        // 大小切換
-        document.querySelectorAll('.size-btn').forEach(el => {
-            el.onclick = () => {
-                document.querySelectorAll('.size-btn').forEach(b => b.classList.remove('selected'));
-                el.classList.add('selected');
-                state.size = el.dataset.size;
-            };
+                if(this.dataset.obj) state.obj = this.dataset.obj;
+                if(this.dataset.size) state.size = this.dataset.size;
+            });
         });
 
         spawn();
