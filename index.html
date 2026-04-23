@@ -115,4 +115,135 @@
     };
     
     const bgs = {
-        mtr
+        mtr: 'https://images.unsplash.com/photo-1444124818704-4d89a495bdec?w=1200',
+        street: 'https://images.unsplash.com/photo-1556950961-8c091994fa41?w=1200'
+    };
+
+    let conf = { bgT:'img', bgV:'mtr', blur:0, cat:'hk', obj:'taxi.jpg', size:250 };
+    let timer, isWin = false;
+
+    // 廣東話語音
+    function sayOk() {
+        const ut = new SpeechSynthesisUtterance("岩啦");
+        ut.lang = 'zh-HK';
+        window.speechSynthesis.speak(ut);
+    }
+
+    function updateObjList() {
+        const container = document.getElementById('obj-list');
+        container.innerHTML = '';
+        lib[conf.cat].forEach(item => {
+            const b = document.createElement('button');
+            b.className = 'btn' + (conf.obj === item.u ? ' selected' : '');
+            b.textContent = item.n;
+            b.onclick = () => {
+                conf.obj = item.u;
+                document.querySelectorAll('#obj-list .btn').forEach(x => x.classList.remove('selected'));
+                b.classList.add('selected');
+            };
+            container.appendChild(b);
+        });
+    }
+
+    function draw() {
+        isWin = false;
+        const bg = document.getElementById('bg');
+        const wrap = document.getElementById('obj-wrap');
+        const img = document.getElementById('target-img');
+        const next = document.getElementById('next-btn');
+        
+        next.style.display = 'none';
+        wrap.classList.remove('win');
+        document.getElementById('progress').style.width = '0%';
+
+        // 背景設定
+        if(conf.bgT === 'color') {
+            bg.style.backgroundImage = 'none';
+            bg.style.backgroundColor = conf.bgV;
+            document.getElementById('blur-ctrl').style.display = 'none';
+        } else {
+            bg.style.backgroundImage = `url(${bgs[conf.bgV]})`;
+            bg.style.filter = `blur(${conf.blur}px)`;
+            document.getElementById('blur-ctrl').style.display = 'block';
+        }
+
+        // 目標物設定
+        img.src = conf.obj;
+        wrap.style.width = conf.size + 'px';
+        wrap.style.padding = conf.cat === 'hk' ? '5px' : '20px'; // 的士類減少白邊
+
+        img.onload = () => {
+            const maxX = window.innerWidth - conf.size - 60;
+            const maxY = window.innerHeight - (conf.size * 1.2) - 60;
+            wrap.style.left = (Math.random() * maxX + 30) + 'px';
+            wrap.style.top = (Math.random() * maxY + 30) + 'px';
+            wrap.style.display = 'flex';
+        };
+        // 容錯
+        img.onerror = () => { wrap.style.display = 'flex'; img.alt = "圖片未找到"; };
+    }
+
+    // 觸摸/注視邏輯
+    const start = () => {
+        if(isWin) return;
+        const p = document.getElementById('progress');
+        p.style.transition = 'width 1.2s linear';
+        p.style.width = '100%';
+        timer = setTimeout(() => {
+            isWin = true;
+            sayOk();
+            document.getElementById('obj-wrap').classList.add('win');
+            document.getElementById('next-btn').style.display = 'block';
+        }, 1200);
+    };
+
+    const stop = () => {
+        if(isWin) return;
+        clearTimeout(timer);
+        const p = document.getElementById('progress');
+        p.style.transition = 'none';
+        p.style.width = '0%';
+    };
+
+    // 事件綁定
+    document.getElementById('obj-wrap').onpointerenter = start;
+    document.getElementById('obj-wrap').onpointerleave = stop;
+    document.getElementById('next-btn').onclick = draw;
+    document.getElementById('set-btn').onclick = () => document.getElementById('panel').style.display = 'block';
+    document.getElementById('close-btn').onclick = () => { document.getElementById('panel').style.display = 'none'; draw(); };
+
+    // 設定切換
+    document.querySelectorAll('.bg-btn').forEach(b => {
+        b.onclick = () => {
+            conf.bgT = b.dataset.type; conf.bgV = b.dataset.val;
+            document.querySelectorAll('.bg-btn').forEach(x => x.classList.remove('selected'));
+            b.classList.add('selected');
+        }
+    });
+
+    document.querySelectorAll('.cat-btn').forEach(b => {
+        b.onclick = () => {
+            conf.cat = b.dataset.cat; conf.obj = lib[conf.cat][0].u;
+            document.querySelectorAll('.cat-btn').forEach(x => x.classList.remove('selected'));
+            b.classList.add('selected');
+            updateObjList();
+        }
+    });
+
+    document.querySelectorAll('.size-btn').forEach(b => {
+        b.onclick = () => {
+            conf.size = parseInt(b.dataset.size);
+            document.querySelectorAll('.size-btn').forEach(x => x.classList.remove('selected'));
+            b.classList.add('selected');
+        }
+    });
+
+    document.getElementById('blur-range').oninput = (e) => { conf.blur = e.target.value; document.getElementById('bg').style.filter = `blur(${conf.blur}px)`; };
+
+    // 初始化
+    updateObjList();
+    draw();
+</script>
+
+</body>
+</html>
