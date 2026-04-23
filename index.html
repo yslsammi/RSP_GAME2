@@ -3,45 +3,40 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>視覺搜尋遊戲 - 專業訓練版</title>
+    <title>視覺搜尋遊戲 - 本地修復版</title>
     <style>
         :root { --primary: #007AFF; --success: #28a745; --gaze: #ffeb3b; }
         * { box-sizing: border-box; -webkit-touch-callout: none; -webkit-user-select: none; }
-        body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: #000; font-family: "Microsoft JhengHei", sans-serif; }
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: #000; font-family: sans-serif; }
         
         #scene { position: relative; width: 100vw; height: 100vh; background: #fff; overflow: hidden; }
         #bg-layer { position: absolute; inset: 0; background-size: cover; background-position: center; transition: filter 0.3s; z-index: 1; }
 
-        /* 核心：15px藍色加粗框 + 極少Padding */
+        /* 15px 藍色超粗框 */
         #target-container {
             position: absolute; display: none; z-index: 10;
             background: #fff; border: 15px solid var(--primary); border-radius: 25px;
-            box-shadow: 0 0 40px #fff, 0 0 20px rgba(0,0,0,0.3);
+            box-shadow: 0 0 50px #fff, 0 0 20px rgba(0,0,0,0.3);
             display: flex; justify-content: center; align-items: center;
-            overflow: hidden;
         }
         #target-img { display: block; width: 100%; height: auto; object-fit: contain; }
 
-        /* 進度條 */
-        #progress-bar {
-            position: absolute; bottom: 0; left: 0; height: 12px;
-            background: var(--gaze); width: 0%; z-index: 11; transition: none;
-        }
+        #progress-bar { position: absolute; bottom: 0; left: 0; height: 12px; background: var(--gaze); width: 0%; z-index: 11; }
 
-        /* 介面按鈕 */
-        #settings-trigger { position: absolute; top: 20px; left: 20px; width: 60px; height: 60px; background: rgba(255,255,255,0.6); border: 3px solid #fff; border-radius: 15px; font-size: 30px; display: flex; justify-content: center; align-items: center; z-index: 999; cursor: pointer; }
+        /* UI 按鈕 */
+        #settings-trigger { position: absolute; top: 20px; left: 20px; width: 60px; height: 60px; background: rgba(255,255,255,0.5); border: 3px solid #fff; border-radius: 15px; font-size: 30px; display: flex; justify-content: center; align-items: center; z-index: 999; cursor: pointer; }
         
         #panel { position: fixed; inset: 0; background: #1a1a1a; z-index: 1001; padding: 25px; color: #fff; display: none; overflow-y: auto; }
-        .config-section { margin-bottom: 20px; background: #262626; padding: 15px; border-radius: 12px; }
-        .section-title { font-size: 1.1rem; color: #007AFF; margin-bottom: 10px; display: block; font-weight: bold; }
-        .options-flex { display: flex; gap: 10px; flex-wrap: wrap; }
+        .config-item { margin-bottom: 20px; background: #262626; padding: 15px; border-radius: 12px; }
+        .label { font-size: 1.1rem; color: var(--primary); margin-bottom: 10px; display: block; font-weight: bold; }
+        .opts { display: flex; gap: 10px; flex-wrap: wrap; }
         
-        .opt-btn { padding: 10px 15px; background: #3d3d3d; border: 2px solid #555; border-radius: 8px; color: #fff; cursor: pointer; }
-        .opt-btn.active { background: var(--primary); border-color: #fff; font-weight: bold; }
+        .opt-btn { padding: 10px 18px; background: #444; border: 2px solid #666; border-radius: 8px; color: #fff; cursor: pointer; }
+        .opt-btn.active { background: var(--primary); border-color: #fff; }
         
-        #start-game { width: 100%; padding: 20px; background: var(--success); color: #fff; border: none; border-radius: 12px; font-size: 1.4rem; font-weight: bold; margin-top: 10px; }
-        #next-step { display: none; position: fixed; bottom: 10%; left: 50%; transform: translateX(-50%); padding: 15px 50px; background: var(--success); color: #fff; border: 4px solid #fff; border-radius: 40px; font-size: 2rem; z-index: 2000; cursor: pointer; }
-
+        #start-btn { width: 100%; padding: 20px; background: var(--success); color: #fff; border: none; border-radius: 12px; font-size: 1.4rem; font-weight: bold; }
+        #next-btn { display: none; position: fixed; bottom: 10%; left: 50%; transform: translateX(-50%); padding: 15px 50px; background: var(--success); color: #fff; border: 4px solid #fff; border-radius: 40px; font-size: 2rem; z-index: 2000; }
+        
         .win-state { left: 50% !important; top: 50% !important; transform: translate(-50%, -50%) scale(1.4) !important; border-color: var(--success) !important; }
     </style>
 </head>
@@ -57,51 +52,51 @@
 </div>
 
 <div id="panel">
-    <h2 style="text-align:center; margin-top:0;">訓練設定面板</h2>
+    <h2 style="text-align:center">訓練設定</h2>
     
-    <div class="config-section">
-        <span class="section-title">1. 背景環境</span>
-        <div class="options-flex">
-            <button class="opt-btn active" data-type="bg" data-val="mtr">高清地鐵</button>
-            <button class="opt-btn" data-type="bg" data-val="white">純白背景</button>
-            <button class="opt-btn" data-type="bg" data-val="black">純黑背景</button>
+    <div class="config-item">
+        <span class="label">1. 背景圖片 (讀取本地檔案)</span>
+        <div class="opts">
+            <button class="opt-btn active" data-type="bg" data-val="HK.jpg">香港街道</button>
+            <button class="opt-btn" data-type="bg" data-val="supermarket.jpg">超級市場</button>
+            <button class="opt-btn" data-type="color" data-val="white">純白</button>
+            <button class="opt-btn" data-type="color" data-val="black">純黑</button>
         </div>
-        <div style="margin-top:15px;">
-            <span style="font-size:0.9rem;">背景虛化程度：</span>
-            <input type="range" id="blur-input" min="0" max="20" value="0" style="width:100%; vertical-align: middle;">
-        </div>
-    </div>
-
-    <div class="config-section">
-        <span class="section-title">2. 目標分類</span>
-        <div class="options-flex">
-            <button class="opt-btn active" data-type="cat" data-val="traffic">香港交通工具</button>
-            <button class="opt-btn" data-type="cat" data-val="fruit">健康水果</button>
+        <div style="margin-top:10px;">
+            模糊度：<input type="range" id="blur-slider" min="0" max="20" value="0" style="width:70%; vertical-align:middle;">
         </div>
     </div>
 
-    <div class="config-section">
-        <span class="section-title">3. 具體目標</span>
-        <div class="options-flex" id="item-list"></div>
+    <div class="config-item">
+        <span class="label">2. 目標類別</span>
+        <div class="opts">
+            <button class="opt-btn active" data-type="cat" data-val="traffic">香港交通</button>
+            <button class="opt-btn" data-type="cat" data-val="fruit">水果類</button>
+        </div>
     </div>
 
-    <div class="config-section">
-        <span class="section-title">4. 目標大小</span>
-        <div class="options-flex">
-            <button class="opt-btn" data-type="size" data-val="420">大</button>
+    <div class="config-item">
+        <span class="label">3. 選擇目標</span>
+        <div class="opts" id="item-list"></div>
+    </div>
+
+    <div class="config-item">
+        <span class="label">4. 目標大小</span>
+        <div class="opts">
+            <button class="opt-btn" data-type="size" data-val="400">大</button>
             <button class="opt-btn active" data-type="size" data-val="260">中</button>
-            <button class="opt-btn" data-type="size" data-val="140">小</button>
+            <button class="opt-btn" data-type="size" data-val="130">小</button>
         </div>
     </div>
 
-    <button id="start-game">✅ 應用設定並開始</button>
+    <button id="start-btn">確認開始</button>
 </div>
 
-<button id="next-step">岩啦！下一題 ➔</button>
+<button id="next-btn">下一題 ➔</button>
 
 <script>
-    // 圖片數據庫
-    const db = {
+    // 圖片對應表（請確保檔案就在同一個資料夾）
+    const assets = {
         traffic: [
             {n:'的士', u:'taxi.jpg'}, {n:'小巴', u:'minibus.jpg'}, {n:'巴士', u:'bus.jpg'}, {n:'電車', u:'tram.jpg'}
         ],
@@ -110,145 +105,112 @@
         ]
     };
 
-    const bgs = {
-        mtr: 'https://images.unsplash.com/photo-1565121407202-0a57abbc1494?w=1200&q=80',
-        white: 'white',
-        black: 'black'
-    };
+    let state = { bgT:'img', bgV:'HK.jpg', blur:0, cat:'traffic', obj:'taxi.jpg', size:260 };
+    let timer, solved = false;
 
-    let settings = { bg:'mtr', blur:0, cat:'traffic', obj:'taxi.jpg', size:260 };
-    let gazeTimer, solved = false;
-
-    // 廣東話發聲
-    function playVoice() {
+    function speak() {
         const msg = new SpeechSynthesisUtterance("岩啦");
         msg.lang = 'zh-HK';
-        msg.rate = 0.9;
         window.speechSynthesis.speak(msg);
     }
 
-    // 更新目標清單
-    function refreshItemList() {
-        const container = document.getElementById('item-list');
-        container.innerHTML = '';
-        db[settings.cat].forEach(item => {
+    function updateList() {
+        const list = document.getElementById('item-list');
+        list.innerHTML = '';
+        assets[state.cat].forEach(item => {
             const b = document.createElement('button');
-            b.className = 'opt-btn' + (settings.obj === item.u ? ' active' : '');
-            b.textContent = item.n;
-            b.onclick = () => {
-                settings.obj = item.u;
-                refreshItemList();
-            };
-            container.appendChild(b);
+            b.className = 'opt-btn' + (state.obj === item.u ? ' active' : '');
+            b.textContent = item.name || item.n;
+            b.onclick = () => { state.obj = item.u; updateList(); };
+            list.appendChild(b);
         });
     }
 
-    // 初始化遊戲畫面
-    function initGame() {
+    function reset() {
         solved = false;
         const bg = document.getElementById('bg-layer');
         const wrap = document.getElementById('target-container');
         const img = document.getElementById('target-img');
-        const next = document.getElementById('next-step');
+        const next = document.getElementById('next-btn');
         
         next.style.display = 'none';
         wrap.classList.remove('win-state');
         document.getElementById('progress-bar').style.width = '0%';
 
-        // 背景處理
-        if(settings.bg === 'white' || settings.bg === 'black') {
+        // 背景
+        if(state.bgT === 'color') {
             bg.style.backgroundImage = 'none';
-            bg.style.backgroundColor = settings.bg;
-            bg.style.filter = 'none';
+            bg.style.backgroundColor = state.bgV;
         } else {
-            bg.style.backgroundImage = `url(${bgs[settings.bg]})`;
-            bg.style.filter = `blur(${settings.blur}px)`;
+            bg.style.backgroundImage = `url(${state.bgV})`;
+            bg.style.filter = `blur(${state.blur}px)`;
         }
 
-        // 目標物處理
-        img.src = settings.obj;
-        wrap.style.width = settings.size + 'px';
-        
-        // 分類差異化：交通工具類白邊極少(2px)，水果類適中(15px)
-        wrap.style.padding = settings.cat === 'traffic' ? '2px' : '15px';
+        // 目標圖片
+        img.src = state.obj;
+        wrap.style.width = state.size + 'px';
+        // 的士等交通工具自動縮小邊距
+        wrap.style.padding = state.cat === 'traffic' ? '4px' : '18px';
 
         img.onload = () => {
-            const safeW = window.innerWidth - settings.size - 80;
-            const safeH = window.innerHeight - (settings.size * 1.2) - 80;
-            wrap.style.left = (Math.random() * safeW + 40) + 'px';
-            wrap.style.top = (Math.random() * safeH + 40) + 'px';
+            const x = Math.random() * (window.innerWidth - state.size - 100) + 50;
+            const y = Math.random() * (window.innerHeight - (state.size*1.2) - 100) + 50;
+            wrap.style.left = x + 'px';
+            wrap.style.top = y + 'px';
             wrap.style.display = 'flex';
         };
-        img.onerror = () => {
-            wrap.style.display = 'flex';
-            img.alt = "圖片路徑錯誤：" + settings.obj;
-        };
+        img.onerror = () => { wrap.style.display = 'flex'; img.alt = "找不到圖: " + state.obj; };
     }
 
-    // 互動邏輯
-    function startGaze() {
+    // 交互
+    document.getElementById('target-container').onpointerenter = () => {
         if(solved) return;
         const bar = document.getElementById('progress-bar');
         bar.style.transition = 'width 1.2s linear';
         bar.style.width = '100%';
-        gazeTimer = setTimeout(() => {
+        timer = setTimeout(() => {
             solved = true;
-            playVoice();
+            speak();
             document.getElementById('target-container').classList.add('win-state');
-            document.getElementById('next-step').style.display = 'block';
+            document.getElementById('next-btn').style.display = 'block';
         }, 1200);
-    }
+    };
 
-    function stopGaze() {
+    document.getElementById('target-container').onpointerleave = () => {
         if(solved) return;
-        clearTimeout(gazeTimer);
+        clearTimeout(timer);
         const bar = document.getElementById('progress-bar');
         bar.style.transition = 'none';
         bar.style.width = '0%';
-    }
-
-    // 監聽與設定
-    document.getElementById('target-container').onpointerenter = startGaze;
-    document.getElementById('target-container').onpointerleave = stopGaze;
-    document.getElementById('next-step').onclick = initGame;
-    document.getElementById('settings-trigger').onclick = () => document.getElementById('panel').style.display = 'block';
-    
-    document.getElementById('start-game').onclick = () => {
-        document.getElementById('panel').style.display = 'none';
-        initGame();
     };
 
-    // 選項切換
+    // 選項邏輯
     document.querySelectorAll('.opt-btn').forEach(btn => {
         btn.onclick = function() {
             const type = this.dataset.type;
             const val = this.dataset.val;
             if(!type) return;
-
             document.querySelectorAll(`.opt-btn[data-type="${type}"]`).forEach(b => b.classList.remove('active'));
             this.classList.add('active');
 
-            if(type === 'bg') settings.bg = val;
-            if(type === 'size') settings.size = parseInt(val);
-            if(type === 'cat') {
-                settings.cat = val;
-                settings.obj = db[val][0].u;
-                refreshItemList();
-            }
+            if(type === 'bg') { state.bgT = 'img'; state.bgV = val; }
+            if(type === 'color') { state.bgT = 'color'; state.bgV = val; }
+            if(type === 'size') state.size = parseInt(val);
+            if(type === 'cat') { state.cat = val; state.obj = assets[val][0].u; updateList(); }
         };
     });
 
-    document.getElementById('blur-input').oninput = (e) => {
-        settings.blur = e.target.value;
-        if(settings.bg === 'mtr') {
-            document.getElementById('bg-layer').style.filter = `blur(${settings.blur}px)`;
-        }
+    document.getElementById('blur-slider').oninput = (e) => {
+        state.blur = e.target.value;
+        if(state.bgT === 'img') document.getElementById('bg-layer').style.filter = `blur(${state.blur}px)`;
     };
 
-    // 啟動
-    refreshItemList();
-    initGame();
-</script>
+    document.getElementById('settings-trigger').onclick = () => document.getElementById('panel').style.display = 'block';
+    document.getElementById('start-btn').onclick = () => { document.getElementById('panel').style.display = 'none'; reset(); };
+    document.getElementById('next-btn').onclick = reset;
 
+    updateList();
+    reset();
+</script>
 </body>
 </html>
