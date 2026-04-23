@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>視覺搜尋遊戲 - 本地修復版</title>
+    <title>視覺搜尋遊戲 - 穩定恢復版</title>
     <style>
         :root { --primary: #007AFF; --success: #28a745; --gaze: #ffeb3b; }
         * { box-sizing: border-box; -webkit-touch-callout: none; -webkit-user-select: none; }
         body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: #000; font-family: sans-serif; }
         
-        #scene { position: relative; width: 100vw; height: 100vh; background: #fff; overflow: hidden; }
+        #scene { position: relative; width: 100vw; height: 100vh; background: #000; overflow: hidden; }
         #bg-layer { position: absolute; inset: 0; background-size: cover; background-position: center; transition: filter 0.3s; z-index: 1; }
 
         /* 15px 藍色超粗框 */
@@ -20,7 +20,6 @@
             display: flex; justify-content: center; align-items: center;
         }
         #target-img { display: block; width: 100%; height: auto; object-fit: contain; }
-
         #progress-bar { position: absolute; bottom: 0; left: 0; height: 12px; background: var(--gaze); width: 0%; z-index: 11; }
 
         /* UI 按鈕 */
@@ -31,7 +30,7 @@
         .label { font-size: 1.1rem; color: var(--primary); margin-bottom: 10px; display: block; font-weight: bold; }
         .opts { display: flex; gap: 10px; flex-wrap: wrap; }
         
-        .opt-btn { padding: 10px 18px; background: #444; border: 2px solid #666; border-radius: 8px; color: #fff; cursor: pointer; }
+        .opt-btn { padding: 12px 18px; background: #444; border: 2px solid #666; border-radius: 8px; color: #fff; cursor: pointer; }
         .opt-btn.active { background: var(--primary); border-color: #fff; }
         
         #start-btn { width: 100%; padding: 20px; background: var(--success); color: #fff; border: none; border-radius: 12px; font-size: 1.4rem; font-weight: bold; }
@@ -52,36 +51,30 @@
 </div>
 
 <div id="panel">
-    <h2 style="text-align:center">訓練設定</h2>
+    <h2 style="text-align:center">遊戲設定</h2>
     
     <div class="config-item">
-        <span class="label">1. 背景圖片 (讀取本地檔案)</span>
+        <span class="label">背景選擇</span>
         <div class="opts">
-            <button class="opt-btn active" data-type="bg" data-val="HK.jpg">香港街道</button>
-            <button class="opt-btn" data-type="bg" data-val="supermarket.jpg">超級市場</button>
-            <button class="opt-btn" data-type="color" data-val="white">純白</button>
-            <button class="opt-btn" data-type="color" data-val="black">純黑</button>
-        </div>
-        <div style="margin-top:10px;">
-            模糊度：<input type="range" id="blur-slider" min="0" max="20" value="0" style="width:70%; vertical-align:middle;">
+            <button class="opt-btn active" data-type="bg" data-val="mtr.jpg">地鐵月台</button>
+            <button class="opt-btn" data-type="bg" data-val="HK.jpg">香港街道</button>
+            <button class="opt-btn" data-type="color" data-val="black">純黑背景</button>
+            <button class="opt-btn" data-type="color" data-val="white">純白背景</button>
         </div>
     </div>
 
     <div class="config-item">
-        <span class="label">2. 目標類別</span>
+        <span class="label">目標物</span>
         <div class="opts">
-            <button class="opt-btn active" data-type="cat" data-val="traffic">香港交通</button>
-            <button class="opt-btn" data-type="cat" data-val="fruit">水果類</button>
+            <button class="opt-btn active" data-type="obj" data-val="taxi.jpg">的士</button>
+            <button class="opt-btn" data-type="obj" data-val="minibus.jpg">小巴</button>
+            <button class="opt-btn" data-type="obj" data-val="apple.jpg">蘋果</button>
+            <button class="opt-btn" data-type="obj" data-val="banana.jpg">香蕉</button>
         </div>
     </div>
 
     <div class="config-item">
-        <span class="label">3. 選擇目標</span>
-        <div class="opts" id="item-list"></div>
-    </div>
-
-    <div class="config-item">
-        <span class="label">4. 目標大小</span>
+        <span class="label">大小設定</span>
         <div class="opts">
             <button class="opt-btn" data-type="size" data-val="400">大</button>
             <button class="opt-btn active" data-type="size" data-val="260">中</button>
@@ -89,80 +82,55 @@
         </div>
     </div>
 
-    <button id="start-btn">確認開始</button>
+    <button id="start-btn">確定開始</button>
 </div>
 
 <button id="next-btn">下一題 ➔</button>
 
 <script>
-    // 圖片對應表（請確保檔案就在同一個資料夾）
-    const assets = {
-        traffic: [
-            {n:'的士', u:'taxi.jpg'}, {n:'小巴', u:'minibus.jpg'}, {n:'巴士', u:'bus.jpg'}, {n:'電車', u:'tram.jpg'}
-        ],
-        fruit: [
-            {n:'蘋果', u:'apple.jpg'}, {n:'香蕉', u:'banana.jpg'}, {n:'橙', u:'orange.jpg'}, {n:'西瓜', u:'watermelon.jpg'}
-        ]
-    };
-
-    let state = { bgT:'img', bgV:'HK.jpg', blur:0, cat:'traffic', obj:'taxi.jpg', size:260 };
+    let state = { bgT:'img', bgV:'mtr.jpg', obj:'taxi.jpg', size:260 };
     let timer, solved = false;
-
-    function speak() {
-        const msg = new SpeechSynthesisUtterance("岩啦");
-        msg.lang = 'zh-HK';
-        window.speechSynthesis.speak(msg);
-    }
-
-    function updateList() {
-        const list = document.getElementById('item-list');
-        list.innerHTML = '';
-        assets[state.cat].forEach(item => {
-            const b = document.createElement('button');
-            b.className = 'opt-btn' + (state.obj === item.u ? ' active' : '');
-            b.textContent = item.name || item.n;
-            b.onclick = () => { state.obj = item.u; updateList(); };
-            list.appendChild(b);
-        });
-    }
 
     function reset() {
         solved = false;
         const bg = document.getElementById('bg-layer');
         const wrap = document.getElementById('target-container');
         const img = document.getElementById('target-img');
-        const next = document.getElementById('next-btn');
         
-        next.style.display = 'none';
+        document.getElementById('next-btn').style.display = 'none';
         wrap.classList.remove('win-state');
         document.getElementById('progress-bar').style.width = '0%';
 
-        // 背景
+        // 背景邏輯
         if(state.bgT === 'color') {
             bg.style.backgroundImage = 'none';
             bg.style.backgroundColor = state.bgV;
         } else {
             bg.style.backgroundImage = `url(${state.bgV})`;
-            bg.style.filter = `blur(${state.blur}px)`;
+            bg.style.backgroundColor = 'transparent';
         }
 
-        // 目標圖片
+        // 目標圖片與「去白邊」處理
         img.src = state.obj;
         wrap.style.width = state.size + 'px';
-        // 的士等交通工具自動縮小邊距
-        wrap.style.padding = state.cat === 'traffic' ? '4px' : '18px';
+        
+        // 核心修正：如果是的士或小巴，Padding 縮到最小（2px），讓車身貼近藍框
+        if(state.obj === 'taxi.jpg' || state.obj === 'minibus.jpg') {
+            wrap.style.padding = '2px';
+        } else {
+            wrap.style.padding = '15px';
+        }
 
         img.onload = () => {
             const x = Math.random() * (window.innerWidth - state.size - 100) + 50;
-            const y = Math.random() * (window.innerHeight - (state.size*1.2) - 100) + 50;
+            const y = Math.random() * (window.innerHeight - (state.size) - 100) + 50;
             wrap.style.left = x + 'px';
             wrap.style.top = y + 'px';
             wrap.style.display = 'flex';
         };
-        img.onerror = () => { wrap.style.display = 'flex'; img.alt = "找不到圖: " + state.obj; };
     }
 
-    // 交互
+    // 注視邏輯
     document.getElementById('target-container').onpointerenter = () => {
         if(solved) return;
         const bar = document.getElementById('progress-bar');
@@ -170,7 +138,6 @@
         bar.style.width = '100%';
         timer = setTimeout(() => {
             solved = true;
-            speak();
             document.getElementById('target-container').classList.add('win-state');
             document.getElementById('next-btn').style.display = 'block';
         }, 1200);
@@ -179,37 +146,31 @@
     document.getElementById('target-container').onpointerleave = () => {
         if(solved) return;
         clearTimeout(timer);
-        const bar = document.getElementById('progress-bar');
-        bar.style.transition = 'none';
-        bar.style.width = '0%';
+        document.getElementById('progress-bar').style.transition = 'none';
+        document.getElementById('progress-bar').style.width = '0%';
     };
 
-    // 選項邏輯
+    // 按鈕點擊
     document.querySelectorAll('.opt-btn').forEach(btn => {
         btn.onclick = function() {
             const type = this.dataset.type;
             const val = this.dataset.val;
-            if(!type) return;
             document.querySelectorAll(`.opt-btn[data-type="${type}"]`).forEach(b => b.classList.remove('active'));
             this.classList.add('active');
 
-            if(type === 'bg') { state.bgT = 'img'; state.bgV = val; }
-            if(type === 'color') { state.bgT = 'color'; state.bgV = val; }
+            if(type === 'bg') {
+                if(val === 'black' || val === 'white') { state.bgT = 'color'; state.bgV = val; }
+                else { state.bgT = 'img'; state.bgV = val; }
+            }
+            if(type === 'obj') state.obj = val;
             if(type === 'size') state.size = parseInt(val);
-            if(type === 'cat') { state.cat = val; state.obj = assets[val][0].u; updateList(); }
         };
     });
-
-    document.getElementById('blur-slider').oninput = (e) => {
-        state.blur = e.target.value;
-        if(state.bgT === 'img') document.getElementById('bg-layer').style.filter = `blur(${state.blur}px)`;
-    };
 
     document.getElementById('settings-trigger').onclick = () => document.getElementById('panel').style.display = 'block';
     document.getElementById('start-btn').onclick = () => { document.getElementById('panel').style.display = 'none'; reset(); };
     document.getElementById('next-btn').onclick = reset;
 
-    updateList();
     reset();
 </script>
 </body>
