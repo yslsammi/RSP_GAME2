@@ -1,177 +1,289 @@
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>視覺搜尋遊戲 - 穩定恢復版</title>
-    <style>
-        :root { --primary: #007AFF; --success: #28a745; --gaze: #ffeb3b; }
-        * { box-sizing: border-box; -webkit-touch-callout: none; -webkit-user-select: none; }
-        body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: #000; font-family: sans-serif; }
-        
-        #scene { position: relative; width: 100vw; height: 100vh; background: #000; overflow: hidden; }
-        #bg-layer { position: absolute; inset: 0; background-size: cover; background-position: center; transition: filter 0.3s; z-index: 1; }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>視覺搜尋遊戲 - 專業訓練版</title>
+    <style>
+        :root { 
+            --primary: #007AFF; --success: #28a745; --danger: #dc3545; --gaze: #ffeb3b; 
+            --card-white: #ffffff;
+        }
+        * { -webkit-touch-callout: none; -webkit-user-select: none; touch-action: none; box-sizing: border-box; }
+        body, html {
+            margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden;
+            font-family: -apple-system, "Microsoft JhengHei", sans-serif;
+            background-color: #000;
+        }
+        
+        /* 基礎場景 */
+        #scene-wrapper {
+            position: relative; width: 100vw; height: 100vh;
+            background-color: white; /* 預設純白背景 */
+            overflow: hidden;
+        }
 
-        /* 15px 藍色超粗框 */
-        #target-container {
-            position: absolute; display: none; z-index: 10;
-            background: #fff; border: 15px solid var(--primary); border-radius: 25px;
-            box-shadow: 0 0 50px #fff, 0 0 20px rgba(0,0,0,0.3);
-            display: flex; justify-content: center; align-items: center;
-        }
-        #target-img { display: block; width: 100%; height: auto; object-fit: contain; }
-        #progress-bar { position: absolute; bottom: 0; left: 0; height: 12px; background: var(--gaze); width: 0%; z-index: 11; }
+        /* 背景層：獨立出來以便應用虛化濾鏡 */
+        #background-layer {
+            position: absolute; inset: 0;
+            background-size: cover; background-position: center; background-repeat: no-repeat;
+            transition: filter 0.3s ease; /* 虛化過渡動畫 */
+            z-index: 1;
+        }
 
-        /* UI 按鈕 */
-        #settings-trigger { position: absolute; top: 20px; left: 20px; width: 60px; height: 60px; background: rgba(255,255,255,0.5); border: 3px solid #fff; border-radius: 15px; font-size: 30px; display: flex; justify-content: center; align-items: center; z-index: 999; cursor: pointer; }
-        
-        #panel { position: fixed; inset: 0; background: #1a1a1a; z-index: 1001; padding: 25px; color: #fff; display: none; overflow-y: auto; }
-        .config-item { margin-bottom: 20px; background: #262626; padding: 15px; border-radius: 12px; }
-        .label { font-size: 1.1rem; color: var(--primary); margin-bottom: 10px; display: block; font-weight: bold; }
-        .opts { display: flex; gap: 10px; flex-wrap: wrap; }
-        
-        .opt-btn { padding: 12px 18px; background: #444; border: 2px solid #666; border-radius: 8px; color: #fff; cursor: pointer; }
-        .opt-btn.active { background: var(--primary); border-color: #fff; }
-        
-        #start-btn { width: 100%; padding: 20px; background: var(--success); color: #fff; border: none; border-radius: 12px; font-size: 1.4rem; font-weight: bold; }
-        #next-btn { display: none; position: fixed; bottom: 10%; left: 50%; transform: translateX(-50%); padding: 15px 50px; background: var(--success); color: #fff; border: 4px solid #fff; border-radius: 40px; font-size: 2rem; z-index: 2000; }
-        
-        .win-state { left: 50% !important; top: 50% !important; transform: translate(-50%, -50%) scale(1.4) !important; border-color: var(--success) !important; }
-    </style>
+        /* 目標物容器 */
+        #object-container {
+            position: absolute; display: none; z-index: 10;
+            cursor: none; 
+            background: white; /* 強制白底以保持高對比 */
+            border-radius: 20px;
+            /* 新增：醒目的外框提示 */
+            border: 6px solid #000; 
+            padding: 10px;
+            box-shadow: 0 0 30px rgba(0,0,0,0.6);
+            transition: transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        
+        #game-object {
+            display: block;
+            width: 100%; 
+            height: auto; /* 保持原始比例 */
+            object-fit: contain;
+            pointer-events: none;
+        }
+
+        .progress-bar {
+            position: absolute; bottom: -20px; left: 10px; right: 10px; width: auto; height: 14px;
+            background: var(--gaze); border-radius: 7px; box-shadow: 0 0 15px var(--gaze);
+        }
+
+        /* 設定面板 (黑底) */
+        #settings-btn {
+            position: absolute; top: 20px; left: 20px; width: 60px; height: 60px;
+            background: rgba(255,255,255,0.4); border-radius: 15px; border: 2px solid #fff;
+            font-size: 30px; display: flex; justify-content: center; align-items: center;
+            cursor: pointer; z-index: 999; color: white;
+        }
+        #settings-panel {
+            position: fixed; inset: 0; background: #1a1a1a; z-index: 1001; 
+            padding: 30px; display: none; overflow-y: auto; color: white;
+        }
+        .setting-item { margin-bottom: 25px; background: #2a2a2a; padding: 20px; border-radius: 20px; }
+        .setting-label { font-weight: bold; font-size: 1.5rem; display: block; margin-bottom: 15px; }
+        .setting-label span { font-size: 1rem; font-weight: normal; color: #aaa; margin-left: 10px; }
+        
+        .bg-options, .obj-options, .size-options { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; }
+        
+        .bg-option { width: 120px; height: 80px; border: 4px solid #444; border-radius: 12px; cursor: pointer; object-fit: cover; }
+        .bg-option.color-option { background: white; border-color: #555; } /* 純白按鈕 */
+        
+        .obj-btn, .size-btn { padding: 15px 25px; background: #333; border: 3px solid #444; border-radius: 12px; cursor: pointer; color: white; font-size: 1.1rem; }
+        .selected { border-color: var(--primary) !important; background: var(--primary) !important; font-weight: bold; }
+        
+        /* 虛化滑桿樣式 */
+        .blur-slider { width: 100%; height: 30px; cursor: pointer; }
+
+        #close-settings { width: 100%; padding: 20px; background: var(--success); color: white; font-size: 1.6rem; border: none; border-radius: 15px; cursor: pointer; font-weight: bold; }
+
+        /* 答對特效 */
+        .correct-center {
+            left: 50% !important; top: 50% !important;
+            transform: translate(-50%, -50%) scale(1.6) !important;
+            z-index: 2000 !important;
+            border-color: var(--success) !important;
+        }
+        .match-card.fade-out { opacity: 0; transform: scale(0.5); pointer-events: none; }
+
+        #next-btn {
+            display: none; position: fixed; bottom: 10%; left: 50%; transform: translateX(-50%);
+            padding: 20px 60px; font-size: 2.5rem; background: var(--success); color: white;
+            border: 3px solid white; border-radius: 50px; cursor: pointer; z-index: 3000;
+        }
+    </style>
 </head>
 <body>
+    <audio id="success-sound" src="cheer.mp3"></audio>
+    
+    <div id="scene-wrapper">
+        <div id="background-layer"></div>
+        <div id="object-container">
+            <img id="game-object" src="">
+            <div class="progress-bar" id="gaze-bar"></div>
+        </div>
+        <div id="settings-btn">⚙️</div>
+    </div>
 
-<div id="scene">
-    <div id="bg-layer"></div>
-    <div id="target-container">
-        <img id="target-img" src="">
-        <div id="progress-bar"></div>
-    </div>
-    <div id="settings-trigger">⚙️</div>
-</div>
+    <div id="settings-panel">
+        <h1 style="text-align: center;">⚙️ 遊戲訓練設定</h1>
+        
+        <div class="setting-item">
+            <span class="setting-label">1. 背景場景</span>
+            <div class="bg-options">
+                <img src="HK.jpg" class="bg-option selected" data-type="img" data-bg="HK.jpg">
+                <img src="MTR2.jpg" class="bg-option" data-type="img" data-bg="MTR2.jpg">
+                <img src="supermarket.jpg" class="bg-option" data-type="img" data-bg="supermarket.jpg">
+                <div class="bg-option color-optionselected" data-type="color" data-bg="white">純白</div>
+            </div>
+        </div>
 
-<div id="panel">
-    <h2 style="text-align:center">遊戲設定</h2>
-    
-    <div class="config-item">
-        <span class="label">背景選擇</span>
-        <div class="opts">
-            <button class="opt-btn active" data-type="bg" data-val="mtr.jpg">地鐵月台</button>
-            <button class="opt-btn" data-type="bg" data-val="HK.jpg">香港街道</button>
-            <button class="opt-btn" data-type="color" data-val="black">純黑背景</button>
-            <button class="opt-btn" data-type="color" data-val="white">純白背景</button>
-        </div>
-    </div>
+        <div class="setting-item">
+            <span class="setting-label">2. 背景虛化程度 (模糊)</span>
+            <input type="range" min="0" max="15" value="0" class="blur-slider" id="blur-control">
+        </div>
 
-    <div class="config-item">
-        <span class="label">目標物</span>
-        <div class="opts">
-            <button class="opt-btn active" data-type="obj" data-val="taxi.jpg">的士</button>
-            <button class="opt-btn" data-type="obj" data-val="minibus.jpg">小巴</button>
-            <button class="opt-btn" data-type="obj" data-val="apple.jpg">蘋果</button>
-            <button class="opt-btn" data-type="obj" data-val="banana.jpg">香蕉</button>
-        </div>
-    </div>
+        <div class="setting-item">
+            <span class="setting-label">3. 搜尋目標</span>
+            <div class="obj-options">
+                <button class="obj-btn selected" data-obj="banana.jpg">🍌 香蕉</button>
+                <button class="obj-btn" data-obj="apple.jpg">🍎 蘋果</button>
+                <button class="obj-btn" data-obj="mtr.jpg">🚇 港鐵</button>
+                <button class="obj-btn" data-obj="taxi.jpg">🚕 的士</button>
+            </div>
+        </div>
 
-    <div class="config-item">
-        <span class="label">大小設定</span>
-        <div class="opts">
-            <button class="opt-btn" data-type="size" data-val="400">大</button>
-            <button class="opt-btn active" data-type="size" data-val="260">中</button>
-            <button class="opt-btn" data-type="size" data-val="130">小</button>
-        </div>
-    </div>
+        <div class="setting-item">
+            <span class="setting-label">4. 目標大小 (同一比例縮放)</span>
+            <div class="size-options">
+                <button class="size-btn" data-size="small">大 (容易)</button>
+                <button class="size-btn selected" data-size="medium">中 (標準)</button>
+                <button class="size-btn" data-size="large">小 (困難)</button>
+            </div>
+        </div>
 
-    <button id="start-btn">確定開始</button>
-</div>
+        <button id="close-settings">✅ 確定並開始</button>
+    </div>
 
-<button id="next-btn">下一題 ➔</button>
+    <button id="next-btn" onclick="triggerNext()">下一題 ➔</button>
 
-<script>
-    let state = { bgT:'img', bgV:'mtr.jpg', obj:'taxi.jpg', size:260 };
-    let timer, solved = false;
+    <script>
+        // 大小設定：固定寬度，高度自動，保持比例
+        const state = { bg: 'white', bgType: 'color', blur: 0, obj: 'banana.jpg', size: 'medium', dwell: 1000 };
+        const sizes = { small: 450, medium: 250, large: 130 }; // 大、中、小 的對應寬度
+        
+        const backgroundLayer = document.getElementById('background-layer');
+        const objContainer = document.getElementById('object-container');
+        const gameObj = document.getElementById('game-object');
+        const gazeBar = document.getElementById('gaze-bar');
+        const nextBtn = document.getElementById('next-btn');
+        
+        let gazeTimer = null;
+        let autoNextTimeout = null;
+        let isTransitioning = false;
 
-    function reset() {
-        solved = false;
-        const bg = document.getElementById('bg-layer');
-        const wrap = document.getElementById('target-container');
-        const img = document.getElementById('target-img');
-        
-        document.getElementById('next-btn').style.display = 'none';
-        wrap.classList.remove('win-state');
-        document.getElementById('progress-bar').style.width = '0%';
+        function updateBackground() {
+            if (state.bgType === 'color') {
+                backgroundLayer.style.backgroundImage = 'none';
+                backgroundLayer.style.backgroundColor = state.bg;
+                backgroundLayer.style.filter = 'none'; // 純色背景不需要模糊
+            } else {
+                backgroundLayer.style.backgroundImage = `url(${state.bg})`;
+                backgroundLayer.style.filter = `blur(${state.blur}px)`;
+            }
+        }
 
-        // 背景邏輯
-        if(state.bgT === 'color') {
-            bg.style.backgroundImage = 'none';
-            bg.style.backgroundColor = state.bgV;
-        } else {
-            bg.style.backgroundImage = `url(${state.bgV})`;
-            bg.style.backgroundColor = 'transparent';
-        }
+        function spawn() {
+            isTransitioning = false;
+            nextBtn.style.display = 'none';
+            objContainer.classList.remove('correct-center');
+            objContainer.style.transform = 'none';
+            gazeBar.style.width = '0%';
+            
+            updateBackground(); // 每次生成題目都更新背景與模糊度
 
-        // 目標圖片與「去白邊」處理
-        img.src = state.obj;
-        wrap.style.width = state.size + 'px';
-        
-        // 核心修正：如果是的士或小巴，Padding 縮到最小（2px），讓車身貼近藍框
-        if(state.obj === 'taxi.jpg' || state.obj === 'minibus.jpg') {
-            wrap.style.padding = '2px';
-        } else {
-            wrap.style.padding = '15px';
-        }
+            gameObj.src = state.obj;
+            const targetWidth = sizes[state.size];
+            
+            // 確保圖片載入後再計算，保持比例
+            gameObj.onload = () => {
+                objContainer.style.width = targetWidth + 'px';
+                // 高度 auto 會自動保持比例，加上外框與 padding
+                
+                const maxX = window.innerWidth - targetWidth - 100;
+                const maxY = window.innerHeight - targetWidth - 100; // 粗略估計高度
+                
+                objContainer.style.left = (Math.random() * maxX + 50) + 'px';
+                objContainer.style.top = (Math.random() * maxY + 50) + 'px';
+                objContainer.style.display = 'block';
+            };
+        }
 
-        img.onload = () => {
-            const x = Math.random() * (window.innerWidth - state.size - 100) + 50;
-            const y = Math.random() * (window.innerHeight - (state.size) - 100) + 50;
-            wrap.style.left = x + 'px';
-            wrap.style.top = y + 'px';
-            wrap.style.display = 'flex';
-        };
-    }
+        // 眼動掃視邏輯
+        const startGaze = () => {
+            if (isTransitioning) return;
+            gazeBar.style.transition = `width ${state.dwell}ms linear`;
+            gazeBar.style.width = '100%';
+            gazeTimer = setTimeout(success, state.dwell);
+        };
 
-    // 注視邏輯
-    document.getElementById('target-container').onpointerenter = () => {
-        if(solved) return;
-        const bar = document.getElementById('progress-bar');
-        bar.style.transition = 'width 1.2s linear';
-        bar.style.width = '100%';
-        timer = setTimeout(() => {
-            solved = true;
-            document.getElementById('target-container').classList.add('win-state');
-            document.getElementById('next-btn').style.display = 'block';
-        }, 1200);
-    };
+        const stopGaze = () => {
+            if (isTransitioning) return;
+            clearTimeout(gazeTimer);
+            gazeBar.style.transition = 'none';
+            gazeBar.style.width = '0%';
+        };
 
-    document.getElementById('target-container').onpointerleave = () => {
-        if(solved) return;
-        clearTimeout(timer);
-        document.getElementById('progress-bar').style.transition = 'none';
-        document.getElementById('progress-bar').style.width = '0%';
-    };
+        function success() {
+            isTransitioning = true;
+            document.getElementById('success-sound').play();
+            objContainer.classList.add('correct-center');
+            nextBtn.style.display = 'block';
+            autoNextTimeout = setTimeout(() => { if (isTransitioning) spawn(); }, 4000);
+        }
 
-    // 按鈕點擊
-    document.querySelectorAll('.opt-btn').forEach(btn => {
-        btn.onclick = function() {
-            const type = this.dataset.type;
-            const val = this.dataset.val;
-            document.querySelectorAll(`.opt-btn[data-type="${type}"]`).forEach(b => b.classList.remove('active'));
-            this.classList.add('active');
+        function triggerNext() {
+            clearTimeout(autoNextTimeout);
+            spawn();
+        }
 
-            if(type === 'bg') {
-                if(val === 'black' || val === 'white') { state.bgT = 'color'; state.bgV = val; }
-                else { state.bgT = 'img'; state.bgV = val; }
-            }
-            if(type === 'obj') state.obj = val;
-            if(type === 'size') state.size = parseInt(val);
-        };
-    });
+        objContainer.addEventListener('pointerenter', startGaze);
+        objContainer.addEventListener('pointerleave', stopGaze);
+        
+        document.getElementById('settings-btn').onclick = () => document.getElementById('settings-panel').style.display = 'block';
+        document.getElementById('close-settings').onclick = () => {
+            document.getElementById('settings-panel').style.display = 'none';
+            spawn();
+        };
 
-    document.getElementById('settings-trigger').onclick = () => document.getElementById('panel').style.display = 'block';
-    document.getElementById('start-btn').onclick = () => { document.getElementById('panel').style.display = 'none'; reset(); };
-    document.getElementById('next-btn').onclick = reset;
+        // 背景切換邏輯
+        document.querySelectorAll('.bg-option').forEach(el => {
+            el.addEventListener('click', function() {
+                document.querySelectorAll('.bg-option').forEach(b => b.classList.remove('selected'));
+                this.classList.add('selected');
+                state.bgType = this.dataset.type;
+                state.bg = this.dataset.bg;
+                updateBackground(); // 即時預覽背景
+            });
+        });
 
-    reset();
-</script>
+        // 虛化滑桿邏輯
+        document.getElementById('blur-control').addEventListener('input', function() {
+            state.blur = this.value;
+            if (state.bgType === 'img') {
+                updateBackground(); // 即時預覽虛化效果
+            }
+        });
+
+        // 目標物切換
+        document.querySelectorAll('.obj-btn').forEach(el => {
+            el.onclick = () => {
+                document.querySelectorAll('.obj-btn').forEach(b => b.classList.remove('selected'));
+                el.classList.add('selected');
+                state.obj = el.dataset.obj;
+            };
+        });
+
+        // 大小切換
+        document.querySelectorAll('.size-btn').forEach(el => {
+            el.onclick = () => {
+                document.querySelectorAll('.size-btn').forEach(b => b.classList.remove('selected'));
+                el.classList.add('selected');
+                state.size = el.dataset.size;
+            };
+        });
+
+        // 初始化
+        updateBackground();
+        spawn();
+    </script>
 </body>
 </html>
