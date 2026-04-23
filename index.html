@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>視覺搜尋遊戲 - 專業訓練版</title>
+    <title>視覺搜尋遊戲 - 專業訓練穩定版</title>
     <style>
         :root { 
-            --primary: #007AFF; --success: #28a745; --danger: #dc3545; --gaze: #ffeb3b; 
+            --primary: #007AFF; --success: #28a745; --gaze: #ffeb3b; 
         }
         * { -webkit-touch-callout: none; -webkit-user-select: none; touch-action: none; box-sizing: border-box; }
         body, html {
@@ -17,25 +17,20 @@
         
         #scene-wrapper {
             position: relative; width: 100vw; height: 100vh;
-            background-color: white;
-            overflow: hidden;
+            background-color: white; overflow: hidden;
         }
 
         #background-layer {
             position: absolute; inset: 0;
             background-size: cover; background-position: center; background-repeat: no-repeat;
-            transition: filter 0.3s ease;
-            z-index: 1;
-            /* 視覺強化：提高對比與銳利度 */
+            transition: filter 0.3s ease; z-index: 1;
             image-rendering: -webkit-optimize-contrast;
-            transform: scale(1.02); 
         }
 
         #object-container {
             position: absolute; display: none; z-index: 10;
             cursor: none; background: white; border-radius: 20px;
-            border: 8px solid #000;
-            padding: 10px;
+            border: 8px solid #000; padding: 10px;
             box-shadow: 0 0 30px rgba(0,0,0,0.6);
             transition: transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
         }
@@ -144,7 +139,7 @@
         const cheerSound = document.getElementById('success-sound');
         
         let gazeTimer = null;
-        let autoNextTimer = null; // 用於自動跳題
+        let autoNextTimer = null;
         let isTransitioning = false;
 
         function updateBackground() {
@@ -159,21 +154,24 @@
         }
 
         function spawn() {
-            // 切換新題目時：停止音效、清除自動跳題計時
+            // 進入新題時強制重置一切
+            clearTimeout(autoNextTimer);
             if (cheerSound) {
                 cheerSound.pause();
                 cheerSound.currentTime = 0;
             }
-            clearTimeout(autoNextTimer);
             
             isTransitioning = false;
             nextBtn.style.display = 'none';
+            objContainer.style.display = 'none'; // 先隱藏，避免上一題殘影
             objContainer.classList.remove('correct-center');
             objContainer.style.borderColor = '#000';
             gazeBar.style.width = '0%';
+            gazeBar.style.transition = 'none';
             
             updateBackground();
 
+            // 交通工具去白邊
             const noPaddingList = ['taxi.jpg', 'mtr.jpg', 'minibus.jpg'];
             if (noPaddingList.includes(state.obj)) {
                 objContainer.style.padding = '0px';
@@ -183,15 +181,18 @@
                 objContainer.style.background = 'white';
             }
 
-            gameObj.src = state.obj;
+            // 隨機位置計算
             const targetWidth = sizes[state.size];
-            
+            const maxX = window.innerWidth - targetWidth - 100;
+            const maxY = window.innerHeight - targetWidth - 100;
+            const randX = Math.random() * maxX + 50;
+            const randY = Math.random() * maxY + 50;
+
+            gameObj.src = state.obj;
             gameObj.onload = () => {
                 objContainer.style.width = targetWidth + 'px';
-                const maxX = window.innerWidth - targetWidth - 100;
-                const maxY = window.innerHeight - targetWidth - 100;
-                objContainer.style.left = (Math.random() * maxX + 50) + 'px';
-                objContainer.style.top = (Math.random() * maxY + 50) + 'px';
+                objContainer.style.left = randX + 'px';
+                objContainer.style.top = randY + 'px';
                 objContainer.style.display = 'block';
             };
         }
@@ -211,7 +212,10 @@
         };
 
         function success() {
+            if (isTransitioning) return;
             isTransitioning = true;
+
+            // 播放音效
             if (cheerSound) {
                 cheerSound.play().catch(e => console.log("Audio play blocked"));
             }
@@ -220,10 +224,8 @@
             objContainer.style.borderColor = 'var(--success)';
             nextBtn.style.display = 'block';
 
-            // 關鍵修改：3秒後自動轉下一題
-            autoNextTimer = setTimeout(() => {
-                if (isTransitioning) spawn();
-            }, 3000);
+            // 4秒後自動跳題（給音效一點時間播完）
+            autoNextTimer = setTimeout(spawn, 4000);
         }
 
         function triggerNext() { spawn(); }
@@ -237,6 +239,7 @@
             spawn();
         };
 
+        // UI 事件綁定
         document.querySelectorAll('.bg-option').forEach(el => {
             el.addEventListener('click', function() {
                 document.querySelectorAll('.bg-option').forEach(b => b.classList.remove('selected'));
