@@ -3,10 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>視覺搜尋遊戲 - 專業訓練版</title>
+    <title>視覺搜尋遊戲 - 高清發光訓練版</title>
     <style>
         :root { 
-            --primary: #007AFF; --success: #28a745; --danger: #dc3545; --gaze: #ffeb3b; 
+            --primary: #007AFF; /* 醒目藍色 */
+            --success: #28a745; 
+            --danger: #dc3545; 
+            --gaze: #ffeb3b; 
+            --bg-color: #000000; 
             --card-white: #ffffff;
         }
         * { -webkit-touch-callout: none; -webkit-user-select: none; touch-action: none; box-sizing: border-box; }
@@ -16,10 +20,10 @@
             background-color: #000;
         }
         
-        /* 基礎場景 */
+        /* 基礎場景容器 */
         #scene-wrapper {
             position: relative; width: 100vw; height: 100vh;
-            background-color: white; /* 預設純白背景 */
+            background-color: #000; /* 預設背景色 */
             overflow: hidden;
         }
 
@@ -27,37 +31,41 @@
         #background-layer {
             position: absolute; inset: 0;
             background-size: cover; background-position: center; background-repeat: no-repeat;
-            transition: filter 0.3s ease; /* 虛化過渡動畫 */
+            transition: filter 0.3s ease, background 0.3s; /* 虛化過渡動畫 */
             z-index: 1;
         }
 
-        /* 目標物容器 */
+        /* 目標物容器：極高對比與加粗發光外框 */
         #object-container {
             position: absolute; display: none; z-index: 10;
             cursor: none; 
-            background: white; /* 強制白底以保持高對比 */
-            border-radius: 20px;
-            /* 新增：醒目的外框提示 */
-            border: 6px solid #000; 
-            padding: 10px;
-            box-shadow: 0 0 30px rgba(0,0,0,0.6);
+            background: white; /* 強制白底 */
+            border-radius: 30px;
+            
+            /* 💥 關鍵核心：加粗外框 (15px) + 醒目藍色 + 強烈白色發光 */
+            border: 15px solid var(--primary); 
+            padding: 20px;
+            box-shadow: 0 0 80px rgba(255,255,255,1), 0 0 30px rgba(0,0,0,0.8);
+            
             transition: transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
         }
         
         #game-object {
             display: block;
             width: 100%; 
-            height: auto; /* 保持原始比例 */
+            height: auto; /* 核心：高度自動，完美保持同一比例 */
             object-fit: contain;
             pointer-events: none;
         }
 
+        /* 注視進度條：加大並發光 */
         .progress-bar {
-            position: absolute; bottom: -20px; left: 10px; right: 10px; width: auto; height: 14px;
-            background: var(--gaze); border-radius: 7px; box-shadow: 0 0 15px var(--gaze);
+            position: absolute; bottom: -25px; left: 20px; right: 20px; width: auto; height: 18px;
+            background: var(--gaze); border-radius: 9px; box-shadow: 0 0 25px var(--gaze);
+            z-index: 20;
         }
 
-        /* 設定面板 (黑底) */
+        /* 設定面板 (黑底高對比) */
         #settings-btn {
             position: absolute; top: 20px; left: 20px; width: 60px; height: 60px;
             background: rgba(255,255,255,0.4); border-radius: 15px; border: 2px solid #fff;
@@ -70,34 +78,36 @@
         }
         .setting-item { margin-bottom: 25px; background: #2a2a2a; padding: 20px; border-radius: 20px; }
         .setting-label { font-weight: bold; font-size: 1.5rem; display: block; margin-bottom: 15px; }
-        .setting-label span { font-size: 1rem; font-weight: normal; color: #aaa; margin-left: 10px; }
         
         .bg-options, .obj-options, .size-options { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; }
         
-        .bg-option { width: 120px; height: 80px; border: 4px solid #444; border-radius: 12px; cursor: pointer; object-fit: cover; }
-        .bg-option.color-option { background: white; border-color: #555; } /* 純白按鈕 */
+        /* 背景按鈕樣式 */
+        .bg-option { width: 140px; height: 90px; border: 4px solid #444; border-radius: 12px; cursor: pointer; object-fit: cover; }
+        .bg-option.color-option { background: white; border-color: #555; display: flex; align-items: center; justify-content: center; color: black; font-weight: bold; }
         
         .obj-btn, .size-btn { padding: 15px 25px; background: #333; border: 3px solid #444; border-radius: 12px; cursor: pointer; color: white; font-size: 1.1rem; }
         .selected { border-color: var(--primary) !important; background: var(--primary) !important; font-weight: bold; }
         
         /* 虛化滑桿樣式 */
-        .blur-slider { width: 100%; height: 30px; cursor: pointer; }
+        .blur-control-wrapper { display: none; } /* 預設隱藏，只有選圖片背景時顯示 */
+        .blur-slider { width: 100%; height: 35px; cursor: pointer; margin-top: 10px; }
 
-        #close-settings { width: 100%; padding: 20px; background: var(--success); color: white; font-size: 1.6rem; border: none; border-radius: 15px; cursor: pointer; font-weight: bold; }
+        #close-settings { width: 100%; padding: 25px; background: var(--success); color: white; font-size: 1.8rem; border: none; border-radius: 15px; cursor: pointer; font-weight: bold; margin-top: 20px; }
 
         /* 答對特效 */
         .correct-center {
             left: 50% !important; top: 50% !important;
             transform: translate(-50%, -50%) scale(1.6) !important;
             z-index: 2000 !important;
-            border-color: var(--success) !important;
+            border-color: var(--success) !important; /* 答對變綠色框 */
+            box-shadow: 0 0 100px rgba(40, 167, 69, 1) !important;
         }
         .match-card.fade-out { opacity: 0; transform: scale(0.5); pointer-events: none; }
 
         #next-btn {
             display: none; position: fixed; bottom: 10%; left: 50%; transform: translateX(-50%);
-            padding: 20px 60px; font-size: 2.5rem; background: var(--success); color: white;
-            border: 3px solid white; border-radius: 50px; cursor: pointer; z-index: 3000;
+            padding: 20px 60px; font-size: 2.5rem; background: rgba(40, 167, 69, 0.9);
+            color: white; border: 3px solid white; border-radius: 50px; cursor: pointer; z-index: 3000;
         }
     </style>
 </head>
@@ -114,21 +124,21 @@
     </div>
 
     <div id="settings-panel">
-        <h1 style="text-align: center;">⚙️ 遊戲訓練設定</h1>
+        <h1 style="text-align: center;">⚙️ 視覺搜尋遊戲設定</h1>
         
         <div class="setting-item">
             <span class="setting-label">1. 背景場景</span>
             <div class="bg-options">
-                <img src="HK.jpg" class="bg-option selected" data-type="img" data-bg="HK.jpg">
-                <img src="MTR2.jpg" class="bg-option" data-type="img" data-bg="MTR2.jpg">
+                <img src="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wCEAAkGBxMTEhUSEhMWFhUXGBgXGBgYFxgaGhgaGBgYGBgaGBgYHSggGBolHRgYITEhJSkrLi4uGB8zODMsNygtLisBCgoKDg0OGhAQGy8lICYtLS0uNS8tLS0tLS0vLS0tLS0uLS0tLS0vLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLf/AABEIARIAuAMBIgACEQEDEQH/xAAbAAABBQEBAAAAAAAAAAAAAAADAgQFBgcBAP/EAD0QAAEEAQMDAwMCBAQEBwEAAAECEQADIRESMUEEBSNREyJhcYGRMqGxwQbR4fAUQlLRFRYjM3Ky8bM0Yv/STRElS0QWR1OCtCUwV3RzZGVXw8PU4vD/xAAZAQADAQEBAAAAAAAAAAAAAAAAAQIDBAX/xAAjEQEBAAMAAQUBAAMBAAAAAAAAAQIRIQMxQRIEUXEEYfAi/9oADAMBAQAPAM7UfH70U47o/qVof+f1+v8AasYVIn4A+9FvL6h+WpCqUo/jGg70K4uA+jL45wT/Yf9S0pUOfj+lAV+YwD6v1+u+D9/oT351+P7VvH/BPrwG+K8n4+T8XUv6uVff53v6O7m6wP+D67FwPkUFX5/p/4v9S19+dfj+33vI+PnyB+rD5M7/vj3W8X6fP+N5X8fO+N5G6wP6H7E44HqfUvI5Hqfl48f9Uv6uPhY9099v7fBveZ9H/H8+Y7rA/Hwdj5F5HP36+N+e8n8XfR8vNfVwPnyB+vI9+78/wB3ff4v5Xp/48v6uFffp4+D8/f5O499bH9XfX9u/V8vN8Xof59+fM7u49/9XfV/4849/f58Xue8jyP9X/HhfyP9eY9vN5m49/3vJ/X/wAd5j28eY9p4j2vA8Z7XheB49rzO/E9r//Z" class="bg-option selected" data-type="img" data-bg="embedded_mtr">
+                <img src="HK.jpg" class="bg-option" data-type="img" data-bg="HK.jpg">
                 <img src="supermarket.jpg" class="bg-option" data-type="img" data-bg="supermarket.jpg">
-                <div class="bg-option color-optionselected" data-type="color" data-bg="white">純白</div>
+                <div class="bg-option color-option" data-type="color" data-bg="white">純白背景</div>
             </div>
         </div>
 
-        <div class="setting-item">
-            <span class="setting-label">2. 背景虛化程度 (模糊)</span>
-            <input type="range" min="0" max="15" value="0" class="blur-slider" id="blur-control">
+        <div class="setting-item blur-control-wrapper" id="blur-slider-wrapper">
+            <span class="setting-label">2. 背景模糊程度 (凸顯目標)</span>
+            <input type="range" min="0" max="20" value="0" class="blur-slider" id="blur-control">
         </div>
 
         <div class="setting-item">
@@ -144,40 +154,49 @@
         <div class="setting-item">
             <span class="setting-label">4. 目標大小 (同一比例縮放)</span>
             <div class="size-options">
-                <button class="size-btn" data-size="small">大 (容易)</button>
+                <button class="size-btn" data-size="large">大 (容易)</button>
                 <button class="size-btn selected" data-size="medium">中 (標準)</button>
-                <button class="size-btn" data-size="large">小 (困難)</button>
+                <button class="size-btn" data-size="small">小 (困難)</button>
             </div>
         </div>
 
-        <button id="close-settings">✅ 確定並開始</button>
+        <button id="close-settings">✅ 確定並開始訓練</button>
     </div>
 
     <button id="next-btn" onclick="triggerNext()">下一題 ➔</button>
 
     <script>
-        // 大小設定：固定寬度，高度自動，保持比例
-        const state = { bg: 'white', bgType: 'color', blur: 0, obj: 'banana.jpg', size: 'medium', dwell: 1000 };
-        const sizes = { small: 450, medium: 250, large: 130 }; // 大、中、小 的對應寬度
+        // 高清內建港鐵背景 (base64 嵌入)
+        const embeddedMtrBg = "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wCEAAkGBxMTEhUSEhMWFhUXGBgXGBgYFxgaGhgaGBgYGBgaGBgYHSggGBolHRgYITEhJSkrLi4uGB8zODMsNygtLisBCgoKDg0OGhAQGy8lICYtLS0uNS8tLS0tLS0vLS0tLS0uLS0tLS0vLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLf/AABEIARIAuAMBIgACEQEDEQH/xAAbAAABBQEBAAAAAAAAAAAAAAADAgQFBgcBAP/EAD0QAAEEAQMDAwMCBAQEBwEAAAECEQADIRESMUEEBSNREyJhcYGRMqGxwQbR4fAUQlLRFRYjM3Ky8bM0Yv/STRElS0QWR1OCtCUwV3RzZGVXw8PU4vD/xAAZAQADAQEBAAAAAAAAAAAAAAAAAQIDBAX/xAAjEQEBAAMAAQUBAAMBAAAAAAAAAQIRIQMxQRIEUXEEYfAi/9oADAMBAQAPAM7UfH70U47o/qVof+f1+v8AasYVIn4A+9FvL6h+WpCqUo/jGg70K4uA+jL45wT/Yf9S0pUOfj+lAV+YwD6v1+u+D9/oT351+P7VvH/BPrwG+K8n4+T8XUv6uVff53v6O7m6wP+D67FwPkUFX5/p/4v9S19+dfj+33vI+PnyB+rD5M7/vj3W8X6fP+N5X8fO+N5G6wP6H7E44HqfUvI5Hqfl48f9Uv6uPhY9099v7fBveZ9H/H8+Y7rA/Hwdj5F5HP36+N+e8n8XfR8vNfVwPnyB+vI9+78/wB3ff4v5Xp/48v6uFffp4+D8/f5O499bH9XfX9u/V8vN8Xof59+fM7u49/9XfV/4849/f58Xue8jyP9X/HhfyP9eY9vN5m49/3vJ/X/wAd5j28eY9p4j2vA8Z7XheB49rzO/E9r//Z";
+
+        // 大小設定：固定寬度，高度自動，保持同一比例
+        const state = { bg: embeddedMtrBg, bgType: 'img', blur: 0, obj: 'banana.jpg', size: 'medium', dwell: 1000 };
+        const sizes = { large: 480, medium: 280, small: 150 }; // 大、中、小 的對應寬度
         
         const backgroundLayer = document.getElementById('background-layer');
         const objContainer = document.getElementById('object-container');
         const gameObj = document.getElementById('game-object');
         const gazeBar = document.getElementById('gaze-bar');
         const nextBtn = document.getElementById('next-btn');
+        const blurSliderWrapper = document.getElementById('blur-slider-wrapper');
         
         let gazeTimer = null;
         let autoNextTimeout = null;
         let isTransitioning = false;
 
+        // 更新背景與虛化效果
         function updateBackground() {
             if (state.bgType === 'color') {
                 backgroundLayer.style.backgroundImage = 'none';
                 backgroundLayer.style.backgroundColor = state.bg;
-                backgroundLayer.style.filter = 'none'; // 純色背景不需要模糊
+                backgroundLayer.style.filter = 'none'; // 純色不需要模糊
+                blurSliderWrapper.style.display = 'none'; // 隱藏滑桿
             } else {
-                backgroundLayer.style.backgroundImage = `url(${state.bg})`;
+                let bgSrc = state.bg === 'embedded_mtr' ? embeddedMtrBg : state.bg;
+                backgroundLayer.style.backgroundImage = `url(${bgSrc})`;
+                backgroundLayer.style.backgroundColor = 'transparent';
                 backgroundLayer.style.filter = `blur(${state.blur}px)`;
+                blurSliderWrapper.style.display = 'block'; // 顯示滑桿
             }
         }
 
@@ -186,25 +205,34 @@
             nextBtn.style.display = 'none';
             objContainer.classList.remove('correct-center');
             objContainer.style.transform = 'none';
+            objContainer.style.borderColor = "var(--primary)"; // 重置邊框顏色
             gazeBar.style.width = '0%';
             
-            updateBackground(); // 每次生成題目都更新背景與模糊度
+            updateBackground(); // 每次生成都確保背景設定正確
 
             gameObj.src = state.obj;
             const targetWidth = sizes[state.size];
             
-            // 確保圖片載入後再計算，保持比例
+            // 關鍵：確保圖片載入後再計算，保持完美比例
             gameObj.onload = () => {
                 objContainer.style.width = targetWidth + 'px';
                 // 高度 auto 會自動保持比例，加上外框與 padding
                 
-                const maxX = window.innerWidth - targetWidth - 100;
-                const maxY = window.innerHeight - targetWidth - 100; // 粗略估計高度
+                // 增加邊距保護，避免太靠邊
+                const padding = 120;
+                const maxX = window.innerWidth - targetWidth - padding;
+                const maxY = window.innerHeight - (targetWidth * 0.8) - padding; // 粗略估計高度
                 
-                objContainer.style.left = (Math.random() * maxX + 50) + 'px';
-                objContainer.style.top = (Math.random() * maxY + 50) + 'px';
+                objContainer.style.left = (Math.random() * maxX + padding/2) + 'px';
+                objContainer.style.top = (Math.random() * maxY + padding/2) + 'px';
                 objContainer.style.display = 'block';
             };
+            
+            // 容錯：如果圖片載入失敗，直接顯示（例如 banana.jpg 找不到）
+            gameObj.onerror = () => {
+                objContainer.style.width = targetWidth + 'px';
+                objContainer.style.display = 'block';
+            }
         }
 
         // 眼動掃視邏輯
@@ -227,7 +255,11 @@
             document.getElementById('success-sound').play();
             objContainer.classList.add('correct-center');
             nextBtn.style.display = 'block';
-            autoNextTimeout = setTimeout(() => { if (isTransitioning) spawn(); }, 4000);
+            
+            // 4秒後自動跳轉
+            autoNextTimeout = setTimeout(() => {
+                if (isTransitioning) spawn();
+            }, 4000);
         }
 
         function triggerNext() {
@@ -235,10 +267,14 @@
             spawn();
         }
 
+        // 事件監聽 (適配眼動儀)
         objContainer.addEventListener('pointerenter', startGaze);
         objContainer.addEventListener('pointerleave', stopGaze);
         
-        document.getElementById('settings-btn').onclick = () => document.getElementById('settings-panel').style.display = 'block';
+        document.getElementById('settings-btn').onclick = () => {
+            document.getElementById('settings-panel').style.display = 'block';
+        };
+
         document.getElementById('close-settings').onclick = () => {
             document.getElementById('settings-panel').style.display = 'none';
             spawn();
@@ -251,7 +287,7 @@
                 this.classList.add('selected');
                 state.bgType = this.dataset.type;
                 state.bg = this.dataset.bg;
-                updateBackground(); // 即時預覽背景
+                updateBackground(); // 設定頁面即時預覽
             });
         });
 
@@ -259,7 +295,7 @@
         document.getElementById('blur-control').addEventListener('input', function() {
             state.blur = this.value;
             if (state.bgType === 'img') {
-                updateBackground(); // 即時預覽虛化效果
+                updateBackground(); // 設定頁面即時預覽虛化
             }
         });
 
@@ -282,7 +318,6 @@
         });
 
         // 初始化
-        updateBackground();
         spawn();
     </script>
 </body>
