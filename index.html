@@ -3,13 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>視覺搜尋遊戲 - 專業突出的士版</title>
+    <title>視覺搜尋遊戲 - 分類訓練版</title>
     <style>
         :root { 
-            --primary: #007AFF; /* 醒目藍色框 */
-            --success: #28a745; 
-            --danger: #dc3545; 
-            --gaze: #ffeb3b; 
+            --primary: #007AFF; --success: #28a745; --gaze: #ffeb3b; 
         }
         * { -webkit-touch-callout: none; -webkit-user-select: none; touch-action: none; box-sizing: border-box; }
         body, html {
@@ -18,97 +15,61 @@
             background-color: #000;
         }
         
-        /* 基礎場景容器 */
-        #scene-wrapper {
-            position: relative; width: 100vw; height: 100vh;
-            background-color: #000;
-            overflow: hidden;
-        }
-
-        /* 背景層 */
+        #scene-wrapper { position: relative; width: 100vw; height: 100vh; background-color: #000; overflow: hidden; }
         #background-layer {
-            position: absolute; inset: 0;
-            background-size: cover; background-position: center; background-repeat: no-repeat;
-            transition: filter 0.3s ease, background 0.3s;
-            z-index: 1;
+            position: absolute; inset: 0; background-size: cover; background-position: center;
+            transition: filter 0.3s ease; z-index: 1;
         }
 
-        /* 目標物容器：核心強化對比 */
+        /* 目標物容器：藍色加粗框 + 強烈發光 */
         #object-container {
             position: absolute; display: none; z-index: 10;
-            cursor: none; 
-            background: white; /* 強制白底 */
-            border-radius: 30px;
-            
-            /* 💥 關鍵：15px 醒目藍色框 + 強烈白色發光 */
+            background: white; border-radius: 30px;
             border: 15px solid var(--primary); 
-            
-            /* 關鍵修正：縮減 Padding 以凸顯車身 */
-            padding: 5px; /* 的士專用更小 Padding */
-            
-            box-shadow: 0 0 80px rgba(255,255,255,1), 0 0 30px rgba(0,0,0,0.8);
-            
-            transition: transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.3s;
-            display: flex; justify-content: center; align-items: center; /* 居中圖片 */
+            box-shadow: 0 0 60px rgba(255,255,255,1), 0 0 30px rgba(0,0,0,0.5);
+            transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            display: flex; justify-content: center; align-items: center;
         }
         
-        #game-object {
-            display: block;
-            width: 100%; 
-            height: auto; /* 核心：高度自動，完美保持同一比例 */
-            object-fit: contain; /* 確保內容不拉伸 */
-            pointer-events: none;
-        }
+        #game-object { display: block; width: 100%; height: auto; object-fit: contain; }
 
-        /* 注視進度條：加大並發光 */
         .progress-bar {
-            position: absolute; bottom: -22px; left: 10px; right: 10px; width: auto; height: 16px;
-            background: var(--gaze); border-radius: 8px; box-shadow: 0 0 25px var(--gaze);
-            z-index: 20;
+            position: absolute; bottom: -25px; left: 5px; right: 5px; height: 15px;
+            background: var(--gaze); border-radius: 10px; box-shadow: 0 0 20px var(--gaze);
+            width: 0%; z-index: 20;
         }
 
-        /* 設定面板 (黑底高對比) */
         #settings-btn {
-            position: absolute; top: 20px; left: 20px; width: 60px; height: 60px;
-            background: rgba(255,255,255,0.4); border-radius: 15px; border: 2px solid #fff;
-            font-size: 30px; display: flex; justify-content: center; align-items: center;
-            cursor: pointer; z-index: 999; color: white;
+            position: absolute; top: 20px; left: 20px; width: 55px; height: 55px;
+            background: rgba(255,255,255,0.3); border-radius: 15px; border: 2px solid #fff;
+            font-size: 28px; display: flex; justify-content: center; align-items: center; z-index: 999;
         }
+
         #settings-panel {
-            position: fixed; inset: 0; background: #1a1a1a; z-index: 1001; 
-            padding: 30px; display: none; overflow-y: auto; color: white;
+            position: fixed; inset: 0; background: #121212; z-index: 1001; 
+            padding: 25px; display: none; overflow-y: auto; color: white;
         }
-        .setting-item { margin-bottom: 25px; background: #2a2a2a; padding: 20px; border-radius: 20px; }
-        .setting-label { font-weight: bold; font-size: 1.5rem; display: block; margin-bottom: 15px; }
+        .setting-item { margin-bottom: 20px; background: #222; padding: 15px; border-radius: 15px; }
+        .setting-label { font-weight: bold; font-size: 1.3rem; display: block; margin-bottom: 12px; color: #aaa; }
         
-        .bg-options, .obj-options, .size-options { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; }
-        
-        /* 背景按鈕樣式 */
-        .bg-option { width: 140px; height: 90px; border: 4px solid #444; border-radius: 12px; cursor: pointer; object-fit: cover; color: black; font-weight: bold; }
-        .bg-option.color-option { display: flex; align-items: center; justify-content: center; text-align: center; }
-        
-        .obj-btn, .size-btn { padding: 15px 25px; background: #333; border: 3px solid #444; border-radius: 12px; cursor: pointer; color: white; font-size: 1.1rem; }
+        .flex-options { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+        .bg-card { width: 120px; height: 80px; border: 4px solid #444; border-radius: 10px; cursor: pointer; object-fit: cover; }
+        .btn-opt { padding: 12px 20px; background: #333; border: 3px solid #444; border-radius: 10px; cursor: pointer; color: white; min-width: 100px; text-align: center; }
         .selected { border-color: var(--primary) !important; background: var(--primary) !important; font-weight: bold; }
         
-        /* 虛化滑桿樣式 */
-        .blur-control-wrapper { display: none; } /* 智慧隱藏 */
-        .blur-slider { width: 100%; height: 35px; cursor: pointer; margin-top: 10px; }
+        #close-settings { width: 100%; padding: 20px; background: var(--success); color: white; font-size: 1.5rem; border: none; border-radius: 12px; font-weight: bold; margin-top: 15px; }
 
-        #close-settings { width: 100%; padding: 25px; background: var(--success); color: white; font-size: 1.8rem; border: none; border-radius: 15px; cursor: pointer; font-weight: bold; margin-top: 20px; }
-
-        /* 答對特效 */
         .correct-center {
             left: 50% !important; top: 50% !important;
-            transform: translate(-50%, -50%) scale(1.6) !important;
-            z-index: 2000 !important;
-            border-color: var(--success) !important; /* 答對變綠色框 */
-            box-shadow: 0 0 100px rgba(40, 167, 69, 1) !important;
+            transform: translate(-50%, -50%) scale(1.5) !important;
+            border-color: var(--success) !important;
+            box-shadow: 0 0 80px rgba(40, 167, 69, 1) !important;
         }
 
         #next-btn {
-            display: none; position: fixed; bottom: 10%; left: 50%; transform: translateX(-50%);
-            padding: 20px 60px; font-size: 2.5rem; background: rgba(40, 167, 69, 0.9);
-            color: white; border: 3px solid white; border-radius: 50px; cursor: pointer; z-index: 3000;
+            display: none; position: fixed; bottom: 8%; left: 50%; transform: translateX(-50%);
+            padding: 18px 50px; font-size: 2rem; background: var(--success);
+            color: white; border: 3px solid white; border-radius: 40px; z-index: 3000;
         }
     </style>
 </head>
@@ -125,198 +86,209 @@
     </div>
 
     <div id="settings-panel">
-        <h1 style="text-align: center;">⚙️ 視覺搜尋遊戲設定</h1>
+        <h2 style="text-align: center;">⚙️ 遊戲訓練設定</h2>
         
         <div class="setting-item">
-            <span class="setting-label">1. 背景場景</span>
-            <div class="bg-options">
-                <img src="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wCEAAkGBxMTEhUSEhMWFhUXGBgXGBgYFxgaGhgaGBgYGBgaGBgYHSggGBolHRgYITEhJSkrLi4uGB8zODMsNygtLisBCgoKDg0OGhAQGy8lICYtLS0uNS8tLS0tLS0vLS0tLS0uLS0tLS0vLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLf/AABEIARIAuAMBIgACEQEDEQH/xAAbAAABBQEBAAAAAAAAAAAAAAADAgQFBgcBAP/EAD0QAAEEAQMDAwMCBAQEBwEAAAECEQADIRESMUEEBSNREyJhcYGRMqGxwQbR4fAUQlLRFRYjM3Ky8bM0Yv/STRElS0QWR1OCtCUwV3RzZGVXw8PU4vD/xAAZAQADAQEBAAAAAAAAAAAAAAAAAQIDBAX/xAAjEQEBAAMAAQUBAAMBAAAAAAAAAQIRIQMxQRIEUXEEYfAi/9oADAMBAQAPAM7UfH70U47o/qVof+f1+v8AasYVIn4A+9FvL6h+WpCqUo/jGg70K4uA+jL45wT/Yf9S0pUOfj+lAV+YwD6v1+u+D9/oT351+P7VvH/BPrwG+K8n4+T8XUv6uVff53v6O7m6wP+D67FwPkUFX5/p/4v9S19+dfj+33vI+PnyB+rD5M7/vj3W8X6fP+N5X8fO+N5G6wP6H7E44HqfUvI5Hqfl48f9Uv6uPhY9099v7fBveZ9H/H8+Y7rA/Hwdj5F5HP36+N+e8n8XfR8vNfVwPnyB+vI9+78/B3ff4v5Xp/48v6uFffp4+D8/f5O499bH9XfX9u/V8vN8Xof59+fM7u49/9XfV/4849/f58Xue8jyP9X/HhfyP9eY9vN5m49/3vJ/X/Ad5j28eY9p4j2vA8Z7XheB49rzO/E9r//Z" class="bg-option selected" data-type="img" data-bg="embedded_mtr">
-                <div class="bg-option color-option" data-type="color" data-bg="white" style="background:white; border-color:#555;">純白背景</div>
-                <div class="bg-option color-option" data-type="color" data-bg="black" style="background:black; color:white; border-color:#888;">純黑背景</div>
-                <img src="HK.jpg" class="bg-option" data-type="img" data-bg="HK.jpg" onerror="this.src='https://via.placeholder.com/140x90/333/fff?text=HK'">
-                <img src="supermarket.jpg" class="bg-option" data-type="img" data-bg="supermarket.jpg" onerror="this.src='https://via.placeholder.com/140x90/333/fff?text=Market'">
+            <span class="setting-label">1. 背景場景 (地鐵/純色)</span>
+            <div class="flex-options">
+                <div class="bg-card selected" data-type="img" data-bg="mtr">港鐵月台</div>
+                <div class="bg-card" data-type="color" data-bg="white" style="background:white;">純白</div>
+                <div class="bg-card" data-type="color" data-bg="black" style="background:black;">純黑</div>
+                <div class="bg-card" data-type="img" data-bg="street">香港街道</div>
             </div>
         </div>
 
-        <div class="setting-item blur-control-wrapper" id="blur-slider-wrapper">
-            <span class="setting-label">2. 背景模糊程度 (凸顯目標)</span>
-            <input type="range" min="0" max="20" value="0" class="blur-slider" id="blur-control">
+        <div class="setting-item" id="blur-area">
+            <span class="setting-label">2. 背景模糊 (降低干擾度)</span>
+            <input type="range" min="0" max="25" value="0" style="width:100%" id="blur-slider">
         </div>
 
         <div class="setting-item">
-            <span class="setting-label">3. 搜尋目標</span>
-            <div class="obj-options">
-                <button class="obj-btn" data-obj="minibus.jpg">🚌 小巴</button>
-                <button class="obj-btn selected" data-obj="taxi.jpg">🚕 的士 (專業凸顯)</button>
-                <button class="obj-btn" data-obj="banana.jpg">🍌 香蕉</button>
-                <button class="obj-btn" data-obj="apple.jpg">🍎 蘋果</button>
+            <span class="setting-label">3. 搜尋類別</span>
+            <div class="flex-options" id="category-options">
+                <button class="btn-opt selected" data-cat="transport">香港交通</button>
+                <button class="btn-opt" data-cat="fruit">水果類</button>
             </div>
         </div>
 
         <div class="setting-item">
-            <span class="setting-label">4. 目標大小 (同一比例縮放)</span>
-            <div class="size-options">
-                <button class="size-btn" data-size="large">大 (容易)</button>
-                <button class="size-btn selected" data-size="medium">中 (標準)</button>
-                <button class="size-btn" data-size="small">小 (困難)</button>
+            <span class="setting-label">4. 目標物選擇</span>
+            <div class="flex-options" id="target-options">
+                </div>
+        </div>
+
+        <div class="setting-item">
+            <span class="setting-label">5. 目標大小</span>
+            <div class="flex-options">
+                <button class="btn-opt" data-size="large">大</button>
+                <button class="btn-opt selected" data-size="medium">中</button>
+                <button class="btn-opt" data-size="small">小</button>
             </div>
         </div>
 
-        <button id="close-settings">✅ 確定並開始訓練</button>
+        <button id="close-settings">✅ 套用並開始</button>
     </div>
 
     <button id="next-btn" onclick="triggerNext()">下一題 ➔</button>
 
     <script>
-        // 高清內建港鐵背景 (Base64)
-        const embeddedMtrBg = "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wCEAAkGBxMTEhUSEhMWFhUXGBgXGBgYFxgaGhgaGBgYGBgaGBgYHSggGBolHRgYITEhJSkrLi4uGB8zODMsNygtLisBCgoKDg0OGhAQGy8lICYtLS0uNS8tLS0tLS0vLS0tLS0uLS0tLS0vLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLf/AABEIARIAuAMBIgACEQEDEQH/xAAbAAABBQEBAAAAAAAAAAAAAAADAgQFBgcBAP/EAD0QAAEEAQMDAwMCBAQEBwEAAAECEQADIRESMUEEBSNREyJhcYGRMqGxwQbR4fAUQlLRFRYjM3Ky8bM0Yv/STRElS0QWR1OCtCUwV3RzZGVXw8PU4vD/xAAZAQADAQEBAAAAAAAAAAAAAAAAAQIDBAX/xAAjEQEBAAMAAQUBAAMBAAAAAAAAAQIRIQMxQRIEUXEEYfAi/9oADAMBAQAPAM7UfH70U47o/qVof+f1+v8AasYVIn4A+9FvL6h+WpCqUo/jGg70K4uA+jL45wT/Yf9S0pUOfj+lAV+YwD6v1+u+D9/oT351+P7VvH/BPrwG+K8n4+T8XUv6uVff53v6O7m6wP+D67FwPkUFX5/p/4v9S19+dfj+33vI+PnyB+rD5M7/vj3W8X6fP+N5X8fO+N5G6wP6H7E44HqfUvI5Hqfl48f9Uv6uPhY9099v7fBveZ9H/H8+Y7rA/Hwdj5F5HP36+N+e8n8XfR8vNfVwPnyB+vI9+78/B3ff4v5Xp/48v6uFffp4+D8/f5O499bH9XfX9u/V8vN8Xof59+fM7u49/9XfV/4849/f58Xue8jyP9X/HhfyP9eY9vN5m49/3vJ/X/Ad5j28eY9p4j2vA8Z7XheB49rzO/E9r//Z";
+        // 圖片庫 (使用高清 Unsplash 關鍵字抓取)
+        const assetLibrary = {
+            transport: [
+                { name: '的士', url: 'https://images.unsplash.com/photo-1590515152533-3112a2164366?w=600&auto=format' },
+                { name: '小巴', url: 'https://images.unsplash.com/photo-1563804368212-0051d9eb6d6d?w=600&auto=format' },
+                { name: '巴士', url: 'https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?w=600&auto=format' },
+                { name: '電車', url: 'https://images.unsplash.com/photo-1549413289-53e34f669076?w=600&auto=format' }
+            ],
+            fruit: [
+                { name: '蘋果', url: 'https://images.unsplash.com/photo-1560806887-1e4cd0b6bccb?w=600&auto=format' },
+                { name: '香蕉', url: 'https://images.unsplash.com/photo-1571771894821-ad996211fdf4?w=600&auto=format' },
+                { name: '橙', url: 'https://images.unsplash.com/photo-1582979512210-99b6a53386f9?w=600&auto=format' },
+                { name: '西瓜', url: 'https://images.unsplash.com/photo-1587049352846-4a222e784d38?w=600&auto=format' }
+            ]
+        };
 
-        // 大小設定：固定寬度，高度自動，保持同一比例
-        const state = { bg: embeddedMtrBg, bgType: 'img', blur: 0, obj: 'taxi.jpg', size: 'medium', dwell: 1000 };
-        const sizes = { large: 480, medium: 280, small: 150 }; // 大、中、小 的對應寬度
+        const sceneUrls = {
+            mtr: 'https://images.unsplash.com/photo-1555529669-2269763671c0?w=1200&auto=format',
+            street: 'https://images.unsplash.com/photo-1533929736458-ca588d08c8be?w=1200&auto=format'
+        };
+
+        const state = { 
+            bg: 'mtr', bgType: 'img', blur: 0, 
+            cat: 'transport', objUrl: assetLibrary.transport[0].url, 
+            size: 'medium', dwell: 1200 
+        };
         
-        const backgroundLayer = document.getElementById('background-layer');
-        const objContainer = document.getElementById('object-container');
-        const gameObj = document.getElementById('game-object');
+        const sizes = { large: 460, medium: 260, small: 140 };
+        const bgLayer = document.getElementById('background-layer');
+        const objCon = document.getElementById('object-container');
+        const gameImg = document.getElementById('game-object');
         const gazeBar = document.getElementById('gaze-bar');
         const nextBtn = document.getElementById('next-btn');
-        const blurSliderWrapper = document.getElementById('blur-slider-wrapper');
-        
-        let gazeTimer = null;
-        let autoNextTimeout = null;
-        let isTransitioning = false;
 
-        // 更新背景與虛化效果 (修正黑色選項不見問題)
-        function updateBackground() {
+        // 廣東話語音合成
+        function speakCantonese(text) {
+            const msg = new SpeechSynthesisUtterance();
+            msg.text = text;
+            msg.lang = 'zh-HK';
+            msg.rate = 1.0;
+            window.speechSynthesis.speak(msg);
+        }
+
+        function initTargetButtons() {
+            const container = document.getElementById('target-options');
+            container.innerHTML = '';
+            assetLibrary[state.cat].forEach((item, index) => {
+                const btn = document.createElement('button');
+                btn.className = 'btn-opt' + (item.url === state.objUrl ? ' selected' : '');
+                btn.textContent = item.name;
+                btn.onclick = () => {
+                    document.querySelectorAll('#target-options .btn-opt').forEach(b => b.classList.remove('selected'));
+                    btn.classList.add('selected');
+                    state.objUrl = item.url;
+                };
+                container.appendChild(btn);
+            });
+        }
+
+        function updateScene() {
             if (state.bgType === 'color') {
-                backgroundLayer.style.backgroundImage = 'none';
-                backgroundLayer.style.backgroundColor = state.bg;
-                backgroundLayer.style.filter = 'none'; 
-                blurSliderWrapper.style.display = 'none'; // 純色隱藏滑桿
+                bgLayer.style.backgroundImage = 'none';
+                bgLayer.style.backgroundColor = state.bg;
+                bgLayer.style.filter = 'none';
+                document.getElementById('blur-area').style.display = 'none';
             } else {
-                backgroundLayer.style.backgroundColor = 'transparent';
-                let bgSrc = state.bg === 'embedded_mtr' ? embeddedMtrBg : state.bg;
-                backgroundLayer.style.backgroundImage = `url(${bgSrc})`;
-                backgroundLayer.style.filter = `blur(${state.blur}px)`;
-                blurSliderWrapper.style.display = 'block'; // 圖片顯示滑桿
+                bgLayer.style.backgroundImage = `url(${sceneUrls[state.bg] || state.bg})`;
+                bgLayer.style.filter = `blur(${state.blur}px)`;
+                document.getElementById('blur-area').style.display = 'block';
             }
         }
 
         function spawn() {
-            isTransitioning = false;
+            window.isSuccess = false;
             nextBtn.style.display = 'none';
-            objContainer.classList.remove('correct-center');
-            objContainer.style.transform = 'none';
-            objContainer.style.borderColor = "var(--primary)"; // 重置藍框
+            objCon.classList.remove('correct-center');
+            objCon.style.borderColor = "var(--primary)";
             gazeBar.style.width = '0%';
             
-            // 專用修正：針對的士縮減 Padding，其餘保持標準
-            objContainer.style.padding = state.obj === 'taxi.jpg' ? '5px' : '18px';
+            // 如果是交通工具，白邊減到最少以凸顯車身
+            objCon.style.padding = state.cat === 'transport' ? '2px' : '15px';
 
-            updateBackground(); // 生成時應用背景設定
-
-            gameObj.src = state.obj;
-            const targetWidth = sizes[state.size];
+            updateScene();
+            gameImg.src = state.objUrl;
             
-            // 關鍵：確保圖片載入後再計算，保持完美比例
-            gameObj.onload = () => {
-                objContainer.style.width = targetWidth + 'px';
-                objContainer.style.height = 'auto'; // 高度自動
-
-                // 邊距保護，避免太靠邊
-                const paddingBuffer = 120;
-                const maxX = window.innerWidth - targetWidth - paddingBuffer;
-                const maxY = window.innerHeight - (targetWidth * 0.8) - paddingBuffer; // 估計高度
-                
-                objContainer.style.left = (Math.random() * maxX + paddingBuffer/2) + 'px';
-                objContainer.style.top = (Math.random() * maxY + paddingBuffer/2) + 'px';
-                objContainer.style.display = 'flex'; // 使用 flex 居中
+            const w = sizes[state.size];
+            gameImg.onload = () => {
+                objCon.style.width = w + 'px';
+                objCon.style.height = 'auto';
+                const maxX = window.innerWidth - w - 100;
+                const maxY = window.innerHeight - (w * 0.8) - 100;
+                objCon.style.left = (Math.random() * maxX + 50) + 'px';
+                objCon.style.top = (Math.random() * maxY + 50) + 'px';
+                objCon.style.display = 'flex';
             };
-            
-            // 容錯：如果圖片找不到，顯示預位
-            gameObj.onerror = () => {
-                gameObj.src = 'https://via.placeholder.com/200?text=Object+Missing';
-            }
         }
 
-        // 眼動掃視邏輯
-        const startGaze = () => {
-            if (isTransitioning) return;
-            gazeBar.style.transition = `width ${state.dwell}ms linear`;
-            gazeBar.style.width = '100%';
-            gazeTimer = setTimeout(success, state.dwell);
-        };
+        let gazeTimer;
+        const start = () => { if(!window.isSuccess) { gazeBar.style.transition = `width ${state.dwell}ms linear`; gazeBar.style.width = '100%'; gazeTimer = setTimeout(win, state.dwell); } };
+        const stop = () => { if(!window.isSuccess) { clearTimeout(gazeTimer); gazeBar.style.transition = 'none'; gazeBar.style.width = '0%'; } };
 
-        const stopGaze = () => {
-            if (isTransitioning) return;
-            clearTimeout(gazeTimer);
-            gazeBar.style.transition = 'none';
-            gazeBar.style.width = '0%';
-        };
-
-        function success() {
-            isTransitioning = true;
+        function win() {
+            window.isSuccess = true;
             document.getElementById('success-sound').play();
-            objContainer.classList.add('correct-center');
+            speakCantonese("岩啦！"); // 廣東話語音
+            objCon.classList.add('correct-center');
             nextBtn.style.display = 'block';
-            
-            // 4秒後自動跳轉
-            autoNextTimeout = setTimeout(() => {
-                if (isTransitioning) spawn();
-            }, 4000);
         }
 
-        function triggerNext() {
-            clearTimeout(autoNextTimeout);
-            spawn();
-        }
+        function triggerNext() { spawn(); }
 
-        // 事件監聽 (適配眼動儀)
-        objContainer.addEventListener('pointerenter', startGaze);
-        objContainer.addEventListener('pointerleave', stopGaze);
+        objCon.addEventListener('pointerenter', start);
+        objCon.addEventListener('pointerleave', stop);
         
-        document.getElementById('settings-btn').onclick = () => {
-            document.getElementById('settings-panel').style.display = 'block';
-        };
-
+        document.getElementById('settings-btn').onclick = () => document.getElementById('settings-panel').style.display = 'block';
         document.getElementById('close-settings').onclick = () => {
             document.getElementById('settings-panel').style.display = 'none';
             spawn();
         };
 
-        // UI 切換邏輯
-        document.querySelectorAll('.bg-option, .obj-btn, .size-btn').forEach(el => {
-            el.addEventListener('click', function() {
-                const parent = this.parentElement;
-                parent.querySelectorAll('.bg-option, .obj-btn, .size-btn').forEach(b => b.classList.remove('selected'));
-                this.classList.add('selected');
-                
-                // 背景設定
-                if(this.classList.contains('bg-option')) {
-                    state.bgType = this.dataset.type;
-                    state.bg = this.dataset.bg;
-                    updateBackground();
-                }
-                // 目標物設定
-                if(this.classList.contains('obj-btn')) {
-                    state.obj = this.dataset.obj;
-                }
-                // 大小設定
-                if(this.classList.contains('size-btn')) {
-                    state.size = this.dataset.size;
-                }
-            });
+        // 分類切換邏輯
+        document.querySelectorAll('#category-options .btn-opt').forEach(el => {
+            el.onclick = () => {
+                document.querySelectorAll('#category-options .btn-opt').forEach(b => b.classList.remove('selected'));
+                el.classList.add('selected');
+                state.cat = el.dataset.cat;
+                state.objUrl = assetLibrary[state.cat][0].url; // 切換分類時預選第一個
+                initTargetButtons();
+            };
         });
 
-        // 虛化滑桿邏輯
-        document.getElementById('blur-control').addEventListener('input', function() {
-            state.blur = this.value;
-            if (state.bgType === 'img') {
-                updateBackground();
-            }
+        // 其他切換邏輯
+        document.querySelectorAll('.bg-card').forEach(el => {
+            el.onclick = function() {
+                document.querySelectorAll('.bg-card').forEach(b => b.classList.remove('selected'));
+                this.classList.add('selected');
+                state.bgType = this.dataset.type;
+                state.bg = this.dataset.bg;
+                updateScene();
+            };
         });
+
+        document.querySelectorAll('[data-size]').forEach(el => {
+            el.onclick = function() {
+                document.querySelectorAll('[data-size]').forEach(b => b.classList.remove('selected'));
+                this.classList.add('selected');
+                state.size = this.dataset.size;
+            };
+        });
+
+        document.getElementById('blur-slider').oninput = function() {
+            state.blur = this.value;
+            updateScene();
+        };
 
         // 初始執行
+        initTargetButtons();
         spawn();
     </script>
 </body>
