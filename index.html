@@ -3,293 +3,116 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>視覺搜尋遊戲 - 分類訓練版</title>
+    <title>視覺搜尋遊戲 - 穩定分類版</title>
     <style>
-        :root { 
-            --primary: #007AFF; --success: #28a745; --gaze: #ffeb3b; 
-        }
-        * { -webkit-touch-callout: none; -webkit-user-select: none; touch-action: none; box-sizing: border-box; }
-        body, html {
-            margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden;
-            font-family: -apple-system, "Microsoft JhengHei", sans-serif;
-            background-color: #000;
-        }
+        :root { --primary: #007AFF; --success: #28a745; --gaze: #ffeb3b; }
+        * { box-sizing: border-box; -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: #000; font-family: sans-serif; }
         
-        #scene-wrapper { position: relative; width: 100vw; height: 100vh; background-color: #000; overflow: hidden; }
-        #background-layer {
-            position: absolute; inset: 0; background-size: cover; background-position: center;
-            transition: filter 0.3s ease; z-index: 1;
-        }
+        /* 場景層 */
+        #scene { position: relative; width: 100vw; height: 100vh; overflow: hidden; }
+        #bg { position: absolute; inset: 0; background-size: cover; background-position: center; transition: filter 0.3s; z-index: 1; }
 
-        /* 目標物容器：藍色加粗框 + 強烈發光 */
-        #object-container {
+        /* 目標容器：15px藍框 + 高對比 */
+        #obj-wrap {
             position: absolute; display: none; z-index: 10;
-            background: white; border-radius: 30px;
-            border: 15px solid var(--primary); 
-            box-shadow: 0 0 60px rgba(255,255,255,1), 0 0 30px rgba(0,0,0,0.5);
-            transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            background: #fff; border: 15px solid var(--primary); border-radius: 30px;
+            box-shadow: 0 0 50px #fff, 0 0 20px rgba(0,0,0,0.5);
             display: flex; justify-content: center; align-items: center;
         }
+        #target-img { display: block; width: 100%; height: auto; object-fit: contain; }
+
+        /* 進度條 */
+        #progress {
+            position: absolute; bottom: -22px; left: 5px; right: 5px; height: 16px;
+            background: var(--gaze); border-radius: 10px; width: 0%; z-index: 20;
+        }
+
+        /* 按鈕與面板 */
+        #set-btn { position: absolute; top: 20px; left: 20px; width: 60px; height: 60px; background: rgba(255,255,255,0.4); border: 2px solid #fff; border-radius: 15px; font-size: 30px; display: flex; justify-content: center; align-items: center; z-index: 999; cursor: pointer; }
+        #panel { position: fixed; inset: 0; background: #1a1a1a; z-index: 1001; padding: 30px; color: #fff; display: none; overflow-y: auto; }
+        .item { margin-bottom: 20px; background: #2a2a2a; padding: 15px; border-radius: 15px; }
+        .label { font-size: 1.2rem; font-weight: bold; margin-bottom: 10px; display: block; color: #ccc; }
+        .opts { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
         
-        #game-object { display: block; width: 100%; height: auto; object-fit: contain; }
-
-        .progress-bar {
-            position: absolute; bottom: -25px; left: 5px; right: 5px; height: 15px;
-            background: var(--gaze); border-radius: 10px; box-shadow: 0 0 20px var(--gaze);
-            width: 0%; z-index: 20;
-        }
-
-        #settings-btn {
-            position: absolute; top: 20px; left: 20px; width: 55px; height: 55px;
-            background: rgba(255,255,255,0.3); border-radius: 15px; border: 2px solid #fff;
-            font-size: 28px; display: flex; justify-content: center; align-items: center; z-index: 999;
-        }
-
-        #settings-panel {
-            position: fixed; inset: 0; background: #121212; z-index: 1001; 
-            padding: 25px; display: none; overflow-y: auto; color: white;
-        }
-        .setting-item { margin-bottom: 20px; background: #222; padding: 15px; border-radius: 15px; }
-        .setting-label { font-weight: bold; font-size: 1.3rem; display: block; margin-bottom: 12px; color: #aaa; }
+        /* 選項樣式 */
+        .btn { padding: 12px 18px; background: #444; border: 3px solid #555; border-radius: 10px; color: #fff; cursor: pointer; }
+        .btn.selected { background: var(--primary); border-color: #fff; }
+        .bg-btn { width: 100px; height: 60px; border: 3px solid #555; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-weight: bold; }
         
-        .flex-options { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
-        .bg-card { width: 120px; height: 80px; border: 4px solid #444; border-radius: 10px; cursor: pointer; object-fit: cover; }
-        .btn-opt { padding: 12px 20px; background: #333; border: 3px solid #444; border-radius: 10px; cursor: pointer; color: white; min-width: 100px; text-align: center; }
-        .selected { border-color: var(--primary) !important; background: var(--primary) !important; font-weight: bold; }
-        
-        #close-settings { width: 100%; padding: 20px; background: var(--success); color: white; font-size: 1.5rem; border: none; border-radius: 12px; font-weight: bold; margin-top: 15px; }
+        #close-btn { width: 100%; padding: 20px; background: var(--success); color: #fff; border: none; border-radius: 15px; font-size: 1.5rem; font-weight: bold; margin-top: 20px; }
+        #next-btn { display: none; position: fixed; bottom: 10%; left: 50%; transform: translateX(-50%); padding: 20px 60px; background: var(--success); color: #fff; border: 3px solid #fff; border-radius: 50px; font-size: 2rem; z-index: 2000; }
 
-        .correct-center {
-            left: 50% !important; top: 50% !important;
-            transform: translate(-50%, -50%) scale(1.5) !important;
-            border-color: var(--success) !important;
-            box-shadow: 0 0 80px rgba(40, 167, 69, 1) !important;
-        }
-
-        #next-btn {
-            display: none; position: fixed; bottom: 8%; left: 50%; transform: translateX(-50%);
-            padding: 18px 50px; font-size: 2rem; background: var(--success);
-            color: white; border: 3px solid white; border-radius: 40px; z-index: 3000;
-        }
+        /* 答對動畫 */
+        .win { left: 50% !important; top: 50% !important; transform: translate(-50%, -50%) scale(1.5) !important; border-color: var(--success) !important; }
     </style>
 </head>
 <body>
-    <audio id="success-sound" src="cheer.mp3"></audio>
+
+<div id="scene">
+    <div id="bg"></div>
+    <div id="obj-wrap">
+        <img id="target-img" src="">
+        <div id="progress"></div>
+    </div>
+    <div id="set-btn">⚙️</div>
+</div>
+
+<div id="panel">
+    <h2 style="text-align:center">遊戲訓練設定</h2>
     
-    <div id="scene-wrapper">
-        <div id="background-layer"></div>
-        <div id="object-container">
-            <img id="game-object" src="">
-            <div class="progress-bar" id="gaze-bar"></div>
+    <div class="item">
+        <span class="label">1. 背景選擇</span>
+        <div class="opts">
+            <div class="bg-btn selected" data-type="img" data-val="mtr">地鐵</div>
+            <div class="bg-btn" data-type="img" data-val="street">街道</div>
+            <div class="bg-btn" data-type="color" data-val="white" style="background:#fff;color:#000">純白</div>
+            <div class="bg-btn" data-type="color" data-val="black" style="background:#000;color:#fff">純黑</div>
         </div>
-        <div id="settings-btn">⚙️</div>
     </div>
 
-    <div id="settings-panel">
-        <h2 style="text-align: center;">⚙️ 遊戲訓練設定</h2>
-        
-        <div class="setting-item">
-            <span class="setting-label">1. 背景場景 (地鐵/純色)</span>
-            <div class="flex-options">
-                <div class="bg-card selected" data-type="img" data-bg="mtr">港鐵月台</div>
-                <div class="bg-card" data-type="color" data-bg="white" style="background:white;">純白</div>
-                <div class="bg-card" data-type="color" data-bg="black" style="background:black;">純黑</div>
-                <div class="bg-card" data-type="img" data-bg="street">香港街道</div>
-            </div>
-        </div>
-
-        <div class="setting-item" id="blur-area">
-            <span class="setting-label">2. 背景模糊 (降低干擾度)</span>
-            <input type="range" min="0" max="25" value="0" style="width:100%" id="blur-slider">
-        </div>
-
-        <div class="setting-item">
-            <span class="setting-label">3. 搜尋類別</span>
-            <div class="flex-options" id="category-options">
-                <button class="btn-opt selected" data-cat="transport">香港交通</button>
-                <button class="btn-opt" data-cat="fruit">水果類</button>
-            </div>
-        </div>
-
-        <div class="setting-item">
-            <span class="setting-label">4. 目標物選擇</span>
-            <div class="flex-options" id="target-options">
-                </div>
-        </div>
-
-        <div class="setting-item">
-            <span class="setting-label">5. 目標大小</span>
-            <div class="flex-options">
-                <button class="btn-opt" data-size="large">大</button>
-                <button class="btn-opt selected" data-size="medium">中</button>
-                <button class="btn-opt" data-size="small">小</button>
-            </div>
-        </div>
-
-        <button id="close-settings">✅ 套用並開始</button>
+    <div class="item" id="blur-ctrl">
+        <span class="label">2. 背景模糊度</span>
+        <input type="range" id="blur-range" min="0" max="20" value="0" style="width:100%">
     </div>
 
-    <button id="next-btn" onclick="triggerNext()">下一題 ➔</button>
+    <div class="item">
+        <span class="label">3. 訓練類別</span>
+        <div class="opts">
+            <button class="btn cat-btn selected" data-cat="hk">香港交通</button>
+            <button class="btn cat-btn" data-cat="fruit">水果類</button>
+        </div>
+    </div>
 
-    <script>
-        // 圖片庫 (使用高清 Unsplash 關鍵字抓取)
-        const assetLibrary = {
-            transport: [
-                { name: '的士', url: 'https://images.unsplash.com/photo-1590515152533-3112a2164366?w=600&auto=format' },
-                { name: '小巴', url: 'https://images.unsplash.com/photo-1563804368212-0051d9eb6d6d?w=600&auto=format' },
-                { name: '巴士', url: 'https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?w=600&auto=format' },
-                { name: '電車', url: 'https://images.unsplash.com/photo-1549413289-53e34f669076?w=600&auto=format' }
-            ],
-            fruit: [
-                { name: '蘋果', url: 'https://images.unsplash.com/photo-1560806887-1e4cd0b6bccb?w=600&auto=format' },
-                { name: '香蕉', url: 'https://images.unsplash.com/photo-1571771894821-ad996211fdf4?w=600&auto=format' },
-                { name: '橙', url: 'https://images.unsplash.com/photo-1582979512210-99b6a53386f9?w=600&auto=format' },
-                { name: '西瓜', url: 'https://images.unsplash.com/photo-1587049352846-4a222e784d38?w=600&auto=format' }
-            ]
-        };
+    <div class="item">
+        <span class="label">4. 具體目標</span>
+        <div class="opts" id="obj-list"></div>
+    </div>
 
-        const sceneUrls = {
-            mtr: 'https://images.unsplash.com/photo-1555529669-2269763671c0?w=1200&auto=format',
-            street: 'https://images.unsplash.com/photo-1533929736458-ca588d08c8be?w=1200&auto=format'
-        };
+    <div class="item">
+        <span class="label">5. 目標大小</span>
+        <div class="opts">
+            <button class="btn size-btn" data-size="400">大</button>
+            <button class="btn size-btn selected" data-size="250">中</button>
+            <button class="btn size-btn" data-size="130">小</button>
+        </div>
+    </div>
 
-        const state = { 
-            bg: 'mtr', bgType: 'img', blur: 0, 
-            cat: 'transport', objUrl: assetLibrary.transport[0].url, 
-            size: 'medium', dwell: 1200 
-        };
-        
-        const sizes = { large: 460, medium: 260, small: 140 };
-        const bgLayer = document.getElementById('background-layer');
-        const objCon = document.getElementById('object-container');
-        const gameImg = document.getElementById('game-object');
-        const gazeBar = document.getElementById('gaze-bar');
-        const nextBtn = document.getElementById('next-btn');
+    <button id="close-btn">確定開始</button>
+</div>
 
-        // 廣東話語音合成
-        function speakCantonese(text) {
-            const msg = new SpeechSynthesisUtterance();
-            msg.text = text;
-            msg.lang = 'zh-HK';
-            msg.rate = 1.0;
-            window.speechSynthesis.speak(msg);
-        }
+<button id="next-btn">下一題 ➔</button>
 
-        function initTargetButtons() {
-            const container = document.getElementById('target-options');
-            container.innerHTML = '';
-            assetLibrary[state.cat].forEach((item, index) => {
-                const btn = document.createElement('button');
-                btn.className = 'btn-opt' + (item.url === state.objUrl ? ' selected' : '');
-                btn.textContent = item.name;
-                btn.onclick = () => {
-                    document.querySelectorAll('#target-options .btn-opt').forEach(b => b.classList.remove('selected'));
-                    btn.classList.add('selected');
-                    state.objUrl = item.url;
-                };
-                container.appendChild(btn);
-            });
-        }
-
-        function updateScene() {
-            if (state.bgType === 'color') {
-                bgLayer.style.backgroundImage = 'none';
-                bgLayer.style.backgroundColor = state.bg;
-                bgLayer.style.filter = 'none';
-                document.getElementById('blur-area').style.display = 'none';
-            } else {
-                bgLayer.style.backgroundImage = `url(${sceneUrls[state.bg] || state.bg})`;
-                bgLayer.style.filter = `blur(${state.blur}px)`;
-                document.getElementById('blur-area').style.display = 'block';
-            }
-        }
-
-        function spawn() {
-            window.isSuccess = false;
-            nextBtn.style.display = 'none';
-            objCon.classList.remove('correct-center');
-            objCon.style.borderColor = "var(--primary)";
-            gazeBar.style.width = '0%';
-            
-            // 如果是交通工具，白邊減到最少以凸顯車身
-            objCon.style.padding = state.cat === 'transport' ? '2px' : '15px';
-
-            updateScene();
-            gameImg.src = state.objUrl;
-            
-            const w = sizes[state.size];
-            gameImg.onload = () => {
-                objCon.style.width = w + 'px';
-                objCon.style.height = 'auto';
-                const maxX = window.innerWidth - w - 100;
-                const maxY = window.innerHeight - (w * 0.8) - 100;
-                objCon.style.left = (Math.random() * maxX + 50) + 'px';
-                objCon.style.top = (Math.random() * maxY + 50) + 'px';
-                objCon.style.display = 'flex';
-            };
-        }
-
-        let gazeTimer;
-        const start = () => { if(!window.isSuccess) { gazeBar.style.transition = `width ${state.dwell}ms linear`; gazeBar.style.width = '100%'; gazeTimer = setTimeout(win, state.dwell); } };
-        const stop = () => { if(!window.isSuccess) { clearTimeout(gazeTimer); gazeBar.style.transition = 'none'; gazeBar.style.width = '0%'; } };
-
-        function win() {
-            window.isSuccess = true;
-            document.getElementById('success-sound').play();
-            speakCantonese("岩啦！"); // 廣東話語音
-            objCon.classList.add('correct-center');
-            nextBtn.style.display = 'block';
-        }
-
-        function triggerNext() { spawn(); }
-
-        objCon.addEventListener('pointerenter', start);
-        objCon.addEventListener('pointerleave', stop);
-        
-        document.getElementById('settings-btn').onclick = () => document.getElementById('settings-panel').style.display = 'block';
-        document.getElementById('close-settings').onclick = () => {
-            document.getElementById('settings-panel').style.display = 'none';
-            spawn();
-        };
-
-        // 分類切換邏輯
-        document.querySelectorAll('#category-options .btn-opt').forEach(el => {
-            el.onclick = () => {
-                document.querySelectorAll('#category-options .btn-opt').forEach(b => b.classList.remove('selected'));
-                el.classList.add('selected');
-                state.cat = el.dataset.cat;
-                state.objUrl = assetLibrary[state.cat][0].url; // 切換分類時預選第一個
-                initTargetButtons();
-            };
-        });
-
-        // 其他切換邏輯
-        document.querySelectorAll('.bg-card').forEach(el => {
-            el.onclick = function() {
-                document.querySelectorAll('.bg-card').forEach(b => b.classList.remove('selected'));
-                this.classList.add('selected');
-                state.bgType = this.dataset.type;
-                state.bg = this.dataset.bg;
-                updateScene();
-            };
-        });
-
-        document.querySelectorAll('[data-size]').forEach(el => {
-            el.onclick = function() {
-                document.querySelectorAll('[data-size]').forEach(b => b.classList.remove('selected'));
-                this.classList.add('selected');
-                state.size = this.dataset.size;
-            };
-        });
-
-        document.getElementById('blur-slider').oninput = function() {
-            state.blur = this.value;
-            updateScene();
-        };
-
-        // 初始執行
-        initTargetButtons();
-        spawn();
-    </script>
-</body>
-</html>
+<script>
+    // 預設穩定圖片庫
+    const lib = {
+        hk: [
+            {n:'的士', u:'taxi.jpg'}, {n:'小巴', u:'minibus.jpg'}, {n:'巴士', u:'bus.jpg'}, {n:'電車', u:'tram.jpg'}
+        ],
+        fruit: [
+            {n:'蘋果', u:'apple.jpg'}, {n:'香蕉', u:'banana.jpg'}, {n:'橙', u:'orange.jpg'}, {n:'西瓜', u:'watermelon.jpg'}
+        ]
+    };
+    
+    const bgs = {
+        mtr
